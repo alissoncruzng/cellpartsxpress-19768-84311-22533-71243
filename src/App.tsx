@@ -54,11 +54,11 @@ const App = () => {
           <Routes>
             <Route
               path="/"
-              element={<Welcome />}
+              element={<Index />}
             />
             <Route
-              path="/home"
-              element={<Index />}
+              path="/welcome"
+              element={<Welcome />}
             />
             <Route
               path="/catalog"
