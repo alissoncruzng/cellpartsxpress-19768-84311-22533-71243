@@ -14,16 +14,502 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      delivery_configs: {
+        Row: {
+          base_fee: number
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          max_distance_km: number | null
+          per_km_fee: number
+          region: string
+        }
+        Insert: {
+          base_fee: number
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_distance_km?: number | null
+          per_km_fee: number
+          region: string
+        }
+        Update: {
+          base_fee?: number
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_distance_km?: number | null
+          per_km_fee?: number
+          region?: string
+        }
+        Relationships: []
+      }
+      order_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          order_id: string
+          price: number
+          product_id: string
+          quantity: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          order_id: string
+          price: number
+          product_id: string
+          quantity: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          order_id?: string
+          price?: number
+          product_id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          delivery_address: string
+          delivery_cep: string
+          delivery_city: string
+          delivery_fee: number
+          delivery_latitude: number | null
+          delivery_longitude: number | null
+          delivery_photo_url: string | null
+          delivery_state: string
+          driver_id: string | null
+          driver_notes: string | null
+          id: string
+          issue_reported: boolean | null
+          pickup_address: string | null
+          pickup_latitude: number | null
+          pickup_longitude: number | null
+          pickup_photo_url: string | null
+          signature_data: string | null
+          status: Database["public"]["Enums"]["order_status"] | null
+          subtotal: number
+          total: number
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          delivery_address: string
+          delivery_cep: string
+          delivery_city: string
+          delivery_fee: number
+          delivery_latitude?: number | null
+          delivery_longitude?: number | null
+          delivery_photo_url?: string | null
+          delivery_state: string
+          driver_id?: string | null
+          driver_notes?: string | null
+          id?: string
+          issue_reported?: boolean | null
+          pickup_address?: string | null
+          pickup_latitude?: number | null
+          pickup_longitude?: number | null
+          pickup_photo_url?: string | null
+          signature_data?: string | null
+          status?: Database["public"]["Enums"]["order_status"] | null
+          subtotal: number
+          total: number
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          delivery_address?: string
+          delivery_cep?: string
+          delivery_city?: string
+          delivery_fee?: number
+          delivery_latitude?: number | null
+          delivery_longitude?: number | null
+          delivery_photo_url?: string | null
+          delivery_state?: string
+          driver_id?: string | null
+          driver_notes?: string | null
+          id?: string
+          issue_reported?: boolean | null
+          pickup_address?: string | null
+          pickup_latitude?: number | null
+          pickup_longitude?: number | null
+          pickup_photo_url?: string | null
+          signature_data?: string | null
+          status?: Database["public"]["Enums"]["order_status"] | null
+          subtotal?: number
+          total?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      policies: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          title: string
+          type: string
+          updated_at: string | null
+          version: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          title: string
+          type: string
+          updated_at?: string | null
+          version: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          title?: string
+          type?: string
+          updated_at?: string | null
+          version?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          name: string
+          price: number
+          stock: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name: string
+          price: number
+          stock?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name?: string
+          price?: number
+          stock?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          address: string | null
+          avatar_url: string | null
+          cep: string | null
+          city: string | null
+          cnh_image_url: string | null
+          cnh_number: string | null
+          created_at: string | null
+          full_name: string
+          id: string
+          is_approved: boolean | null
+          is_blocked: boolean | null
+          phone: string | null
+          privacy_policy_accepted_at: string | null
+          rejection_count: number | null
+          role: Database["public"]["Enums"]["user_role"]
+          state: string | null
+          updated_at: string | null
+          vehicle_plate: string | null
+          vehicle_type: string | null
+          warranty_policy_accepted_at: string | null
+          work_policy_accepted_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          avatar_url?: string | null
+          cep?: string | null
+          city?: string | null
+          cnh_image_url?: string | null
+          cnh_number?: string | null
+          created_at?: string | null
+          full_name: string
+          id: string
+          is_approved?: boolean | null
+          is_blocked?: boolean | null
+          phone?: string | null
+          privacy_policy_accepted_at?: string | null
+          rejection_count?: number | null
+          role?: Database["public"]["Enums"]["user_role"]
+          state?: string | null
+          updated_at?: string | null
+          vehicle_plate?: string | null
+          vehicle_type?: string | null
+          warranty_policy_accepted_at?: string | null
+          work_policy_accepted_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          avatar_url?: string | null
+          cep?: string | null
+          city?: string | null
+          cnh_image_url?: string | null
+          cnh_number?: string | null
+          created_at?: string | null
+          full_name?: string
+          id?: string
+          is_approved?: boolean | null
+          is_blocked?: boolean | null
+          phone?: string | null
+          privacy_policy_accepted_at?: string | null
+          rejection_count?: number | null
+          role?: Database["public"]["Enums"]["user_role"]
+          state?: string | null
+          updated_at?: string | null
+          vehicle_plate?: string | null
+          vehicle_type?: string | null
+          warranty_policy_accepted_at?: string | null
+          work_policy_accepted_at?: string | null
+        }
+        Relationships: []
+      }
+      promotions: {
+        Row: {
+          created_at: string | null
+          description: string
+          discount_amount: number | null
+          discount_percentage: number | null
+          id: string
+          is_active: boolean | null
+          target_role: Database["public"]["Enums"]["user_role"] | null
+          title: string
+          valid_from: string
+          valid_until: string
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          discount_amount?: number | null
+          discount_percentage?: number | null
+          id?: string
+          is_active?: boolean | null
+          target_role?: Database["public"]["Enums"]["user_role"] | null
+          title: string
+          valid_from: string
+          valid_until: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          discount_amount?: number | null
+          discount_percentage?: number | null
+          id?: string
+          is_active?: boolean | null
+          target_role?: Database["public"]["Enums"]["user_role"] | null
+          title?: string
+          valid_from?: string
+          valid_until?: string
+        }
+        Relationships: []
+      }
+      ratings: {
+        Row: {
+          app_rating: number
+          client_id: string
+          comment: string | null
+          created_at: string | null
+          delivery_rating: number
+          driver_id: string
+          driver_rating: number
+          id: string
+          order_id: string
+        }
+        Insert: {
+          app_rating: number
+          client_id: string
+          comment?: string | null
+          created_at?: string | null
+          delivery_rating: number
+          driver_id: string
+          driver_rating: number
+          id?: string
+          order_id: string
+        }
+        Update: {
+          app_rating?: number
+          client_id?: string
+          comment?: string | null
+          created_at?: string | null
+          delivery_rating?: number
+          driver_id?: string
+          driver_rating?: number
+          id?: string
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ratings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ratings_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ratings_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string | null
+          driver_id: string
+          id: string
+          order_id: string | null
+          type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          description?: string | null
+          driver_id: string
+          id?: string
+          order_id?: string | null
+          type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string | null
+          driver_id?: string
+          id?: string
+          order_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "client" | "driver"
+      order_status:
+        | "pending"
+        | "confirmed"
+        | "driver_assigned"
+        | "picked_up"
+        | "out_for_delivery"
+        | "delivered"
+        | "cancelled"
+      user_role: "client" | "driver" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +636,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "client", "driver"],
+      order_status: [
+        "pending",
+        "confirmed",
+        "driver_assigned",
+        "picked_up",
+        "out_for_delivery",
+        "delivered",
+        "cancelled",
+      ],
+      user_role: ["client", "driver", "admin"],
+    },
   },
 } as const
