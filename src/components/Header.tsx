@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
-import acrLogo from "@/assets/acr-logo.png";
+import acrLogo from "@/assets/logo.png";
 import {
   DropdownMenu,
   DropdownMenuContent,
