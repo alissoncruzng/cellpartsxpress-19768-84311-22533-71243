@@ -32,6 +32,7 @@ export default function AuthForm({ mode, role = "client", onSuccess }: AuthFormP
           email,
           password,
           options: {
+            emailRedirectTo: `${window.location.origin}/catalog`,
             data: {
               full_name: fullName,
               role,
@@ -75,7 +76,11 @@ export default function AuthForm({ mode, role = "client", onSuccess }: AuthFormP
           : "Cadastro realizado com sucesso!";
         
         toast.success(successMessage);
-        onSuccess?.();
+        
+        // Wait a bit for session to be established before navigating
+        setTimeout(() => {
+          onSuccess?.();
+        }, 500);
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -85,7 +90,11 @@ export default function AuthForm({ mode, role = "client", onSuccess }: AuthFormP
         if (error) throw error;
 
         toast.success("Login realizado com sucesso!");
-        onSuccess?.();
+        
+        // Wait a bit for session to be established before navigating
+        setTimeout(() => {
+          onSuccess?.();
+        }, 500);
       }
     } catch (error: any) {
       toast.error(error.message || "Ocorreu um erro");
