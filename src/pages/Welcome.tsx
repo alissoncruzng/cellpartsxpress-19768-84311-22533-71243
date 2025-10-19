@@ -1,13 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import RoleSelector from "@/components/RoleSelector";
 import AuthForm from "@/components/AuthForm";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download } from "lucide-react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Welcome() {
-  const [selectedRole, setSelectedRole] = useState<"client" | "driver" | "admin" | null>(null);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const roleFromUrl = searchParams.get("role") as "client" | "driver" | "admin" | null;
+  const [selectedRole, setSelectedRole] = useState<"client" | "driver" | "admin" | null>(roleFromUrl);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signup");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/catalog");
+      } else {
+        setLoading(false);
+      }
+    };
+    checkAuth();
+  }, [navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (!selectedRole) {
     return (
@@ -40,7 +67,7 @@ export default function Welcome() {
         <AuthForm
           mode={authMode}
           role={selectedRole}
-          onSuccess={() => window.location.href = "/"}
+          onSuccess={() => navigate("/catalog")}
         />
 
         <div className="text-center">
