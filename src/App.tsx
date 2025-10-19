@@ -7,7 +7,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import Index from "./pages/Index";
-import Welcome from "./pages/Welcome";
 import Catalog from "./pages/Catalog";
 import MyOrders from "./pages/MyOrders";
 import AdminProducts from "./pages/AdminProducts";
@@ -55,10 +54,6 @@ const App = () => {
             <Route
               path="/"
               element={<Index />}
-            />
-            <Route
-              path="/welcome"
-              element={<Welcome />}
             />
             <Route
               path="/catalog"

@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { User, Truck, Shield, Download } from "lucide-react";
+import { User, Truck, Shield, Download, ArrowLeft } from "lucide-react";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
+import { supabase } from "@/integrations/supabase/client";
+import AuthForm from "@/components/AuthForm";
 import backgroundPattern from "@/assets/background-pattern.jpeg";
 import acrLogo from "@/assets/acr-logo-new.jpeg";
 
@@ -18,6 +20,22 @@ export default function Index() {
   const navigate = useNavigate();
   const [currentColorIndex, setCurrentColorIndex] = useState(0);
   const { isInstallable, isInstalled } = usePWAInstall();
+  const [selectedRole, setSelectedRole] = useState<"client" | "driver" | "admin" | null>(null);
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signup");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/catalog");
+      } else {
+        setLoading(false);
+      }
+    };
+    checkAuth();
+  }, [navigate]);
 
   useEffect(() => {
     // Change colors every 3 seconds
@@ -28,31 +46,80 @@ export default function Index() {
     return () => clearInterval(interval);
   }, []);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   const currentColor = roleColors[currentColorIndex];
 
   const roles = [
     {
-      id: "client",
+      id: "client" as const,
       title: "Cliente",
       description: "Faça seus pedidos e acompanhe entregas",
       icon: User,
-      path: "/welcome?role=client",
     },
     {
-      id: "driver",
+      id: "driver" as const,
       title: "Motorista",
       description: "Gerencie suas entregas e rotas",
       icon: Truck,
-      path: "/welcome?role=driver",
     },
     {
-      id: "admin",
+      id: "admin" as const,
       title: "Administrador",
       description: "Gerencie produtos e sistema",
       icon: Shield,
-      path: "/welcome?role=admin",
     },
   ];
+
+  // If a role is selected, show the auth form
+  if (selectedRole) {
+    return (
+      <div 
+        className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+        style={{
+          background: `linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(${backgroundPattern})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundAttachment: "fixed",
+        }}
+      >
+        <div className="w-full max-w-md space-y-4 relative z-10">
+          <Button
+            variant="ghost"
+            onClick={() => setSelectedRole(null)}
+            className="mb-4 hover:bg-primary/10 text-white"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar
+          </Button>
+
+          <AuthForm
+            mode={authMode}
+            role={selectedRole}
+            onSuccess={() => navigate("/catalog")}
+          />
+
+          <div className="text-center">
+            <Button
+              variant="link"
+              onClick={() => setAuthMode(authMode === "signin" ? "signup" : "signin")}
+              className="text-primary hover:text-primary/80"
+            >
+              {authMode === "signin"
+                ? "Não tem conta? Cadastre-se"
+                : "Já tem conta? Entre"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div 
@@ -128,7 +195,7 @@ export default function Index() {
                 boxShadow: `0 0 20px hsl(${currentColor.glow} / 0.2)`,
                 animationDelay: `${index * 150}ms`,
               }}
-              onClick={() => navigate(role.path)}
+              onClick={() => setSelectedRole(role.id)}
             >
               {/* Animated border glow */}
               <div 
