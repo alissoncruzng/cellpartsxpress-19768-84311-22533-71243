@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from "sonner";
 import { Plus, Edit, Trash2, Package } from "lucide-react";
 import Header from "@/components/Header";
+import { ProductImport } from "@/components/admin/ProductImport";
+import { ProductImageUpload } from "@/components/admin/ProductImageUpload";
 
 interface Product {
   id: string;
@@ -150,6 +152,8 @@ export default function AdminProducts() {
       <Header userRole="admin" />
       
       <div className="container mx-auto p-6 space-y-6">
+        <ProductImport />
+        
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Gerenciar Produtos</h1>
@@ -229,16 +233,10 @@ export default function AdminProducts() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="image_url">URL da Imagem</Label>
-                  <Input
-                    id="image_url"
-                    type="url"
-                    value={formData.image_url}
-                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                    placeholder="https://exemplo.com/imagem.jpg"
-                  />
-                </div>
+                <ProductImageUpload
+                  currentImageUrl={formData.image_url}
+                  onImageUrlChange={(url) => setFormData({ ...formData, image_url: url })}
+                />
 
                 <div className="flex gap-3 pt-4">
                   <Button type="submit" className="flex-1">
