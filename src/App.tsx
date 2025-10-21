@@ -13,6 +13,7 @@ import AdminProducts from "./pages/AdminProducts";
 import NotFound from "./pages/NotFound";
 import Install from "./pages/Install";
 import InstallPWA from "./pages/InstallPWA";
+import DriverDashboard from "./pages/DriverDashboard";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,10 @@ const App = () => {
             <Route
               path="/admin/products"
               element={session ? <AdminProducts /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/driver/dashboard"
+              element={session ? <DriverDashboard /> : <Navigate to="/" />}
             />
             <Route path="/install" element={<Install />} />
             <Route path="/install-pwa" element={<InstallPWA />} />

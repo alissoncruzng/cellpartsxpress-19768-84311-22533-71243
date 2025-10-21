@@ -29,7 +29,18 @@ export default function Index() {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate("/catalog");
+        // Check user role and redirect accordingly
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (profile?.role === 'driver') {
+          navigate("/driver/dashboard");
+        } else {
+          navigate("/catalog");
+        }
       } else {
         setLoading(false);
       }
@@ -77,6 +88,14 @@ export default function Index() {
     },
   ];
 
+  const handleAuthSuccess = () => {
+    if (selectedRole === "driver") {
+      navigate("/driver/dashboard");
+    } else {
+      navigate("/catalog");
+    }
+  };
+
   // If a role is selected, show the auth form
   if (selectedRole) {
     return (
@@ -102,7 +121,7 @@ export default function Index() {
           <AuthForm
             mode={authMode}
             role={selectedRole}
-            onSuccess={() => navigate("/catalog")}
+            onSuccess={handleAuthSuccess}
           />
 
           <div className="text-center">

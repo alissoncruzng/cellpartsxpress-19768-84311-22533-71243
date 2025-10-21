@@ -21,6 +21,12 @@ interface HeaderProps {
 export default function Header({ cartItemsCount = 0, userRole = "client" }: HeaderProps) {
   const navigate = useNavigate();
 
+  const getDashboardPath = () => {
+    if (userRole === "driver") return "/driver/dashboard";
+    if (userRole === "admin") return "/admin/products";
+    return "/catalog";
+  };
+
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -37,14 +43,10 @@ export default function Header({ cartItemsCount = 0, userRole = "client" }: Head
       { label: "Meus Pedidos", icon: ShoppingCart, path: "/my-orders" },
     ],
     driver: [
-      { label: "Pedidos Disponíveis", icon: Package, path: "/driver-orders" },
-      { label: "Minhas Entregas", icon: Bike, path: "/my-deliveries" },
-      { label: "Carteira", icon: LayoutDashboard, path: "/wallet" },
+      { label: "Painel", icon: LayoutDashboard, path: "/driver/dashboard" },
     ],
     admin: [
-      { label: "Dashboard", icon: LayoutDashboard, path: "/admin" },
       { label: "Produtos", icon: Package, path: "/admin/products" },
-      { label: "Usuários", icon: Package, path: "/admin/users" },
     ],
   };
 
