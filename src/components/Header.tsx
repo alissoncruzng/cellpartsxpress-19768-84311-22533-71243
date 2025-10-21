@@ -23,7 +23,7 @@ export default function Header({ cartItemsCount = 0, userRole = "client" }: Head
 
   const getDashboardPath = () => {
     if (userRole === "driver") return "/driver/dashboard";
-    if (userRole === "admin") return "/admin/products";
+    if (userRole === "admin") return "/admin/dashboard";
     return "/catalog";
   };
 
@@ -46,7 +46,9 @@ export default function Header({ cartItemsCount = 0, userRole = "client" }: Head
       { label: "Painel", icon: LayoutDashboard, path: "/driver/dashboard" },
     ],
     admin: [
+      { label: "Dashboard", icon: LayoutDashboard, path: "/admin/dashboard" },
       { label: "Produtos", icon: Package, path: "/admin/products" },
+      { label: "Motoristas", icon: Bike, path: "/admin/drivers" },
     ],
   };
 

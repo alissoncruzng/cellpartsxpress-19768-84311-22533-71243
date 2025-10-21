@@ -10,6 +10,9 @@ import Index from "./pages/Index";
 import Catalog from "./pages/Catalog";
 import MyOrders from "./pages/MyOrders";
 import AdminProducts from "./pages/AdminProducts";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminDrivers from "./pages/AdminDrivers";
+import AdminPromotions from "./pages/AdminPromotions";
 import NotFound from "./pages/NotFound";
 import Install from "./pages/Install";
 import InstallPWA from "./pages/InstallPWA";
@@ -67,6 +70,18 @@ const App = () => {
             <Route
               path="/admin/products"
               element={session ? <AdminProducts /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/admin/dashboard"
+              element={session ? <AdminDashboard /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/admin/drivers"
+              element={session ? <AdminDrivers /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/admin/promotions"
+              element={session ? <AdminPromotions /> : <Navigate to="/" />}
             />
             <Route
               path="/driver/dashboard"
