@@ -33,8 +33,32 @@ export default function Catalog() {
   const [shippingFee, setShippingFee] = useState(0);
   const [shippingMethod, setShippingMethod] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [deliveryCep, setDeliveryCep] = useState("");
   const [showReceipt, setShowReceipt] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const navigate = useNavigate();
+
+  // Load cart from localStorage on mount
+  useEffect(() => {
+    const savedCart = localStorage.getItem('acr_cart');
+    if (savedCart) {
+      try {
+        const cartArray = JSON.parse(savedCart);
+        setCart(new Map(cartArray));
+      } catch (e) {
+        console.error('Error loading cart:', e);
+      }
+    }
+  }, []);
+
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    if (cart.size > 0) {
+      localStorage.setItem('acr_cart', JSON.stringify(Array.from(cart.entries())));
+    } else {
+      localStorage.removeItem('acr_cart');
+    }
+  }, [cart]);
 
   useEffect(() => {
     loadProducts();
@@ -156,10 +180,79 @@ export default function Catalog() {
     window.open(whatsappUrl, '_blank');
   };
 
-  const handleShippingCalculated = (fee: number, method: string, address: string) => {
+  const handleShippingCalculated = (fee: number, method: string, address: string, cep: string) => {
     setShippingFee(fee);
     setShippingMethod(method);
     setDeliveryAddress(address);
+    setDeliveryCep(cep);
+  };
+
+  const createOrder = async () => {
+    if (cart.size === 0) {
+      toast.error("Carrinho vazio");
+      return;
+    }
+    if (!shippingMethod) {
+      toast.error("Calcule o frete primeiro");
+      return;
+    }
+
+    setCheckoutLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Você precisa estar logado");
+        navigate("/auth");
+        return;
+      }
+
+      // Create order
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .insert({
+          client_id: user.id,
+          subtotal: getSubtotal(),
+          delivery_fee: shippingFee,
+          total: getSubtotal() + shippingFee,
+          delivery_address: deliveryAddress,
+          delivery_cep: deliveryCep,
+          delivery_city: "São Paulo", // Extract from address in production
+          delivery_state: "SP",
+          status: "pending"
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // Create order items
+      const orderItems = Array.from(cart.entries()).map(([productId, quantity]) => {
+        const product = products.find(p => p.id === productId);
+        const price = customerType === "wholesale" ? product!.price * 0.85 : product!.price;
+        return {
+          order_id: order.id,
+          product_id: productId,
+          quantity,
+          price
+        };
+      });
+
+      const { error: itemsError } = await supabase
+        .from("order_items")
+        .insert(orderItems);
+
+      if (itemsError) throw itemsError;
+
+      toast.success("Pedido criado com sucesso!");
+      setCart(new Map());
+      localStorage.removeItem('acr_cart');
+      navigate("/my-orders");
+    } catch (error: any) {
+      console.error("Error creating order:", error);
+      toast.error("Erro ao criar pedido");
+    } finally {
+      setCheckoutLoading(false);
+    }
   };
 
   const generateReceipt = () => {
@@ -380,12 +473,24 @@ export default function Catalog() {
                   
                   <div className="flex flex-col gap-2">
                     <Button 
+                      onClick={createOrder}
+                      disabled={!shippingMethod || checkoutLoading}
+                      className="w-full"
+                    >
+                      {checkoutLoading ? (
+                        <>Processando...</>
+                      ) : (
+                        <>Finalizar Pedido</>
+                      )}
+                    </Button>
+                    <Button 
                       onClick={sendWhatsAppOrder}
                       disabled={!shippingMethod}
-                      className="w-full bg-green-600 hover:bg-green-700"
+                      variant="outline"
+                      className="w-full bg-green-600 hover:bg-green-700 text-white"
                     >
                       <MessageCircle className="mr-2 h-4 w-4" />
-                      Enviar WhatsApp
+                      WhatsApp
                     </Button>
                     <Button 
                       onClick={generateReceipt}

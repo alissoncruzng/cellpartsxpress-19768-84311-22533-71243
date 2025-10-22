@@ -1,11 +1,14 @@
 // @ts-nocheck - Types will be regenerated after migration
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { MapPin, Package, Clock, CheckCircle } from "lucide-react";
+import { MapPin, Package, Clock, CheckCircle, Download, FileSpreadsheet } from "lucide-react";
 import Header from "@/components/Header";
+import * as XLSX from 'xlsx';
 
 interface Order {
   id: string;
@@ -25,6 +28,7 @@ const statusMap: Record<string, { label: string; color: string; icon: any }> = {
 };
 
 export default function MyOrders() {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -73,14 +77,38 @@ export default function MyOrders() {
     }
   };
 
+  const exportToExcel = () => {
+    const exportData = orders.map(order => ({
+      'Pedido': order.id.slice(0, 8),
+      'Data': new Date(order.created_at).toLocaleString('pt-BR'),
+      'Status': statusMap[order.status]?.label || order.status,
+      'Total': `R$ ${order.total.toFixed(2)}`,
+      'Endereço': `${order.delivery_address}, ${order.delivery_city} - ${order.delivery_state}`
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Pedidos');
+    XLSX.writeFile(wb, `pedidos_acr_${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast.success("Relatório exportado com sucesso!");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-card to-background">
       <Header userRole="client" />
       
       <div className="container mx-auto p-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Meus Pedidos</h1>
-          <p className="text-muted-foreground">Acompanhe seus pedidos em tempo real</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Meus Pedidos</h1>
+            <p className="text-muted-foreground">Acompanhe seus pedidos em tempo real</p>
+          </div>
+          {orders.length > 0 && (
+            <Button onClick={exportToExcel} variant="outline">
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              Exportar Excel
+            </Button>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -89,7 +117,7 @@ export default function MyOrders() {
             const StatusIcon = statusInfo.icon;
 
             return (
-              <Card key={order.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+              <Card key={order.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate(`/order-tracking/${order.id}`)}>
                 <CardHeader className="bg-card/50 backdrop-blur">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">
@@ -127,10 +155,17 @@ export default function MyOrders() {
                     <div className="mt-4 p-4 bg-primary/10 rounded-lg border border-primary/20">
                       <p className="text-sm font-medium text-primary flex items-center gap-2">
                         <MapPin className="h-4 w-4 animate-pulse" />
-                        Seu pedido está a caminho! Acompanhe em tempo real.
+                        Clique para acompanhar em tempo real
                       </p>
                     </div>
                   )}
+
+                  <Button variant="outline" className="w-full mt-4" onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/order-tracking/${order.id}`);
+                  }}>
+                    Ver Detalhes
+                  </Button>
                 </CardContent>
               </Card>
             );

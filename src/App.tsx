@@ -9,6 +9,7 @@ import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import Index from "./pages/Index";
 import Catalog from "./pages/Catalog";
 import MyOrders from "./pages/MyOrders";
+import OrderTracking from "./pages/OrderTracking";
 import AdminProducts from "./pages/AdminProducts";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminDrivers from "./pages/AdminDrivers";
@@ -66,6 +67,10 @@ const App = () => {
             <Route
               path="/my-orders"
               element={session ? <MyOrders /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/order-tracking/:orderId"
+              element={session ? <OrderTracking /> : <Navigate to="/" />}
             />
             <Route
               path="/admin/products"
