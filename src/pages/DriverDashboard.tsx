@@ -13,6 +13,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import SignatureCapture from "@/components/SignatureCapture";
+import DriverStats from "@/components/driver/DriverStats";
+import WithdrawalRequest from "@/components/driver/WithdrawalRequest";
+import ClientInfo from "@/components/driver/ClientInfo";
+import DeliveryRoute from "@/components/driver/DeliveryRoute";
 
 interface Order {
   id: string;
@@ -330,6 +334,9 @@ export default function DriverDashboard() {
       <Header cartItemsCount={0} userRole="driver" />
       
       <div className="container mx-auto p-4 md:p-8 space-y-6">
+        {/* Stats and Ranking */}
+        <DriverStats />
+
         {/* Wallet Card */}
         <Card className="border-2 border-primary/20">
           <CardHeader>
@@ -338,13 +345,14 @@ export default function DriverDashboard() {
               Minha Carteira
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="text-3xl font-bold text-primary">
               R$ {balance.toFixed(2)}
             </div>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground">
               Saldo disponível
             </p>
+            <WithdrawalRequest balance={balance} onSuccess={loadWallet} />
           </CardContent>
         </Card>
 
@@ -361,18 +369,22 @@ export default function DriverDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 text-primary mt-1" />
-                <div>
-                  <p className="font-semibold">Endereço de Entrega:</p>
-                  <p className="text-sm text-muted-foreground">{activeDelivery.delivery_address}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {activeDelivery.delivery_city} - {activeDelivery.delivery_state}
-                  </p>
-                </div>
-              </div>
+              {/* Client Info */}
+              <ClientInfo 
+                clientId={activeDelivery.client_id} 
+                orderId={activeDelivery.id}
+              />
 
-              <div className="flex justify-between items-center">
+              {/* Delivery Route */}
+              <DeliveryRoute
+                pickupAddress={activeDelivery.pickup_address || undefined}
+                deliveryAddress={activeDelivery.delivery_address}
+                deliveryCity={activeDelivery.delivery_city}
+                deliveryState={activeDelivery.delivery_state}
+                deliveryCep={activeDelivery.delivery_cep}
+              />
+
+              <div className="flex justify-between items-center pt-4 border-t">
                 <span className="text-sm text-muted-foreground">Valor da Entrega:</span>
                 <span className="font-bold text-primary">R$ {activeDelivery.delivery_fee.toFixed(2)}</span>
               </div>

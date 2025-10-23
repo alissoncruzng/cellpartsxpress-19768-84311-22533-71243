@@ -1,65 +1,48 @@
-// @ts-nocheck - Types will be regenerated after migration
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { 
-  User, 
-  Phone, 
-  MapPin, 
-  CheckCircle, 
-  XCircle,
-  Ban,
-  Star,
-  Truck
-} from "lucide-react";
 import Header from "@/components/Header";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-
-interface Driver {
-  id: string;
-  full_name: string;
-  phone: string;
-  address: string;
-  vehicle_type: string;
-  vehicle_plate: string;
-  cnh_number: string;
-  cnh_image_url: string;
-  is_approved: boolean;
-  is_blocked: boolean;
-  rejection_count: number;
-  created_at: string;
-}
+import DriverManagement from "@/components/admin/DriverManagement";
 
 export default function AdminDrivers() {
-  const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    loadDrivers();
+    checkAuth();
   }, []);
 
-  const loadDrivers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("role", "driver")
-        .order("created_at", { ascending: false });
+  const checkAuth = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      navigate("/");
+      return;
+    }
 
-      if (error) throw error;
-      setDrivers(data || []);
-    } catch (error: any) {
-      toast.error("Erro ao carregar motoristas");
-    } finally {
-      setLoading(false);
+    // Check if user has admin role
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .single();
+
+    if (!roles) {
+      toast.error("Acesso negado. Apenas administradores.");
+      navigate("/catalog");
     }
   };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-card to-background">
+      <Header cartItemsCount={0} userRole="admin" />
+      
+      <div className="container mx-auto p-4 md:p-8">
+        <DriverManagement />
+      </div>
+    </div>
+  );
+}
 
   const approveDriver = async (driverId: string) => {
     try {

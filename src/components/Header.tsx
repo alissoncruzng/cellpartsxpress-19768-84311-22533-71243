@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import acrLogo from "@/assets/logo.png";
+import NotificationCenter from "@/components/NotificationCenter";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,6 +69,9 @@ export default function Header({ cartItemsCount = 0, userRole = "client" }: Head
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Notification Center */}
+          <NotificationCenter userRole={userRole} />
+
           {userRole === "client" && cartItemsCount > 0 && (
             <Button
               variant="outline"

@@ -12,12 +12,15 @@ import MyOrders from "./pages/MyOrders";
 import OrderTracking from "./pages/OrderTracking";
 import AdminProducts from "./pages/AdminProducts";
 import AdminDashboard from "./pages/AdminDashboard";
-import AdminDrivers from "./pages/AdminDrivers";
+import AdminDrivers from "./pages/AdminDrivers_new";
 import AdminPromotions from "./pages/AdminPromotions";
+import AdminOrders from "./pages/AdminOrders";
 import NotFound from "./pages/NotFound";
 import Install from "./pages/Install";
 import InstallPWA from "./pages/InstallPWA";
 import DriverDashboard from "./pages/DriverDashboard";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
 
 const queryClient = new QueryClient();
 
@@ -89,11 +92,17 @@ const App = () => {
               element={session ? <AdminPromotions /> : <Navigate to="/" />}
             />
             <Route
+              path="/admin/orders"
+              element={session ? <AdminOrders /> : <Navigate to="/" />}
+            />
+            <Route
               path="/driver/dashboard"
               element={session ? <DriverDashboard /> : <Navigate to="/" />}
             />
             <Route path="/install" element={<Install />} />
             <Route path="/install-pwa" element={<InstallPWA />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
