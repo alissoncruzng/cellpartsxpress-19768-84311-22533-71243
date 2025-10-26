@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { MapPin, Package, Clock, CheckCircle, Download, FileSpreadsheet } from "lucide-react";
+import { MapPin, Package, Clock, CheckCircle, Download, FileSpreadsheet, Star } from "lucide-react";
 import Header from "@/components/Header";
+import RatingModal from "@/components/RatingModal";
 import * as XLSX from 'xlsx';
 
 interface Order {
@@ -18,6 +19,8 @@ interface Order {
   delivery_address: string;
   delivery_city: string;
   delivery_state: string;
+  driver_id?: string;
+  has_rating?: boolean;
 }
 
 const statusMap: Record<string, { label: string; color: string; icon: any }> = {
@@ -31,6 +34,15 @@ export default function MyOrders() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ratingModal, setRatingModal] = useState<{
+    isOpen: boolean;
+    orderId: string;
+    driverId: string;
+  }>({
+    isOpen: false,
+    orderId: "",
+    driverId: "",
+  });
 
   useEffect(() => {
     loadOrders();
@@ -62,14 +74,35 @@ export default function MyOrders() {
       if (!user) return;
 
       // @ts-ignore - Types will be regenerated after migration
-      const { data, error } = await supabase
+      const { data: ordersData, error: ordersError } = await supabase
         .from("orders")
-        .select("*")
+        .select("*, driver_id")
         .eq("client_id", user.id)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setOrders(data || []);
+      if (ordersError) throw ordersError;
+
+      // Check ratings for delivered orders
+      const deliveredOrders = ordersData?.filter(order => order.status === 'delivered') || [];
+      const ratingPromises = deliveredOrders.map(async (order) => {
+        const { data: rating } = await supabase
+          .from("ratings")
+          .select("id")
+          .eq("order_id", order.id)
+          .eq("client_id", user.id)
+          .single();
+        return { orderId: order.id, hasRating: !!rating };
+      });
+
+      const ratings = await Promise.all(ratingPromises);
+      const ratingMap = Object.fromEntries(ratings.map(r => [r.orderId, r.hasRating]));
+
+      const ordersWithRatingStatus = ordersData?.map(order => ({
+        ...order,
+        has_rating: ratingMap[order.id] || false,
+      })) || [];
+
+      setOrders(ordersWithRatingStatus);
     } catch (error: any) {
       toast.error("Erro ao carregar pedidos");
     } finally {
@@ -91,6 +124,26 @@ export default function MyOrders() {
     XLSX.utils.book_append_sheet(wb, ws, 'Pedidos');
     XLSX.writeFile(wb, `pedidos_acr_${new Date().toISOString().split('T')[0]}.xlsx`);
     toast.success("Relatório exportado com sucesso!");
+  };
+
+  const openRatingModal = (orderId: string, driverId: string) => {
+    setRatingModal({
+      isOpen: true,
+      orderId,
+      driverId,
+    });
+  };
+
+  const closeRatingModal = () => {
+    setRatingModal({
+      isOpen: false,
+      orderId: "",
+      driverId: "",
+    });
+  };
+
+  const handleRatingSuccess = () => {
+    loadOrders(); // Recarregar pedidos para atualizar status de avaliação
   };
 
   return (
@@ -160,6 +213,21 @@ export default function MyOrders() {
                     </div>
                   )}
 
+                  {order.status === 'delivered' && !order.has_rating && order.driver_id && (
+                    <div className="mt-4 p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openRatingModal(order.id, order.driver_id!);
+                        }}
+                        className="w-full bg-yellow-500 hover:bg-yellow-600 text-white gap-2"
+                      >
+                        <Star className="h-4 w-4" />
+                        Avaliar Motorista
+                      </Button>
+                    </div>
+                  )}
+
                   <Button variant="outline" className="w-full mt-4" onClick={(e) => {
                     e.stopPropagation();
                     navigate(`/order-tracking/${order.id}`);
@@ -179,6 +247,14 @@ export default function MyOrders() {
           )}
         </div>
       </div>
+
+      <RatingModal
+        orderId={ratingModal.orderId}
+        driverId={ratingModal.driverId}
+        isOpen={ratingModal.isOpen}
+        onClose={closeRatingModal}
+        onSuccess={handleRatingSuccess}
+      />
     </div>
   );
 }

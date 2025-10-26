@@ -40,15 +40,31 @@ export default function NotificationCenter({ userRole }: NotificationCenterProps
   const { notificationPermission, requestPermission } = useNotifications(userRole);
 
   useEffect(() => {
-    loadNotifications();
-    subscribeToNotifications();
+    // Verifica se há um usuário logado antes de carregar notificações
+    const checkUserAndLoad = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await loadNotifications();
+          await subscribeToNotifications();
+        }
+      } catch (error) {
+        console.warn("Erro ao verificar usuário para notificações:", error);
+      }
+    };
+    
+    checkUserAndLoad();
   }, []);
 
   const loadNotifications = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.log("Usuário não autenticado, pulando carregamento de notificações");
+        return;
+      }
 
+      // Verifica se a tabela de notificações existe
       const { data, error } = await supabase
         .from("notifications")
         .select("*")
@@ -56,12 +72,15 @@ export default function NotificationCenter({ userRole }: NotificationCenterProps
         .order("sent_at", { ascending: false })
         .limit(20);
 
-      if (error) throw error;
+      if (error) {
+        console.warn("Tabela de notificações não encontrada ou erro ao carregar:", error);
+        return;
+      }
 
       setNotifications(data || []);
       setUnreadCount(data?.filter(n => !n.is_read).length || 0);
     } catch (error: any) {
-      console.error("Error loading notifications:", error);
+      console.warn("Erro ao carregar notificações:", error);
     }
   };
 

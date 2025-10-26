@@ -21,6 +21,18 @@ export const ProductImport = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Verificar tipo do arquivo
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    if (!fileExtension || !['csv', 'xlsx', 'xls'].includes(fileExtension)) {
+      toast.error("Formato de arquivo não suportado. Use apenas arquivos CSV.");
+      return;
+    }
+
+    if (fileExtension !== 'csv') {
+      toast.error("Atualmente suportamos apenas arquivos CSV. Converta seu Excel para CSV primeiro.");
+      return;
+    }
+
     setImporting(true);
 
     try {
@@ -40,7 +52,7 @@ export const ProductImport = () => {
 
         headers.forEach((header, index) => {
           const value = values[index];
-          
+
           if (header === 'preco' || header === 'preço') {
             product.price = parseFloat(value.replace('R$', '').replace(',', '.'));
           } else if (header === 'estoque') {
@@ -103,7 +115,9 @@ export const ProductImport = () => {
           Importar Produtos CSV
         </CardTitle>
         <CardDescription>
-          Faça upload de um arquivo CSV para adicionar múltiplos produtos de uma vez
+          Faça upload de um arquivo CSV para adicionar múltiplos produtos de uma vez.
+          <br />
+          <strong>Nota:</strong> Atualmente suportamos apenas arquivos CSV. Para Excel, converta para CSV primeiro.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

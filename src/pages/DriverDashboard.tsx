@@ -96,18 +96,21 @@ export default function DriverDashboard() {
   }, []);
 
   const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      navigate("/");
-      return;
-    }
-    setUserId(user.id);
+    // Temporarily disabled for testing - using fake session from App.tsx
+    // const { data: { user } } = await supabase.auth.getUser();
+    // if (!user) {
+    //   navigate("/");
+    //   return;
+    // }
+    // setUserId(user.id);
+    setUserId("test-driver-user"); // Fake user ID for testing
   };
 
   const loadOrders = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      // Temporarily disabled for testing - using fake session from App.tsx
+      // const { data: { user } } = await supabase.auth.getUser();
+      // if (!user) return;
 
       // Load available orders (pending, not assigned)
       const { data: available, error: availableError } = await supabase
@@ -124,7 +127,7 @@ export default function DriverDashboard() {
       const { data: mine, error: mineError } = await supabase
         .from("orders")
         .select("*")
-        .eq("driver_id", user.id)
+        .eq("driver_id", userId)
         .order("created_at", { ascending: false });
 
       if (mineError) throw mineError;
@@ -144,13 +147,14 @@ export default function DriverDashboard() {
 
   const loadWallet = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      // Temporarily disabled for testing - using fake session from App.tsx
+      // const { data: { user } } = await supabase.auth.getUser();
+      // if (!user) return;
 
       const { data, error } = await supabase
         .from("wallet_transactions")
         .select("*")
-        .eq("driver_id", user.id)
+        .eq("driver_id", userId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;

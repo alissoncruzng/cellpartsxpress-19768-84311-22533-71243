@@ -1,17 +1,35 @@
+/**
+ * Página Principal - ACR Delivery System
+ *
+ * Melhorias implementadas:
+ * - Layout moderno com cards lado a lado
+ * - Paleta de cores neon dinâmica (4 variações)
+ * - Efeitos hover aprimorados com translateY
+ * - Ícone de admin discreto no canto superior direito
+ * - Design responsivo mobile-first
+ * - Animações suaves e performáticas
+ *
+ * Cards disponíveis:
+ * - Cliente: Acompanhamento de pedidos em tempo real
+ * - Lojista: Condições especiais e preços diferenciados
+ * - Motoboy: Gerenciamento de rotas e aumento de renda
+ * - Admin: Acesso administrativo (ícone no canto)
+ */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { User, Truck, Shield, Download, ArrowLeft } from "lucide-react";
+import { User, Shield, Download, ArrowLeft, Store, Bike } from "lucide-react";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import { supabase } from "@/integrations/supabase/client";
 import AuthForm from "@/components/AuthForm";
 import backgroundPattern from "@/assets/background-pattern.jpeg";
 import acrLogo from "@/assets/acr-logo-new.jpeg";
 
+// Paleta de Cores Dinâmica - 4 variações de verde neon lime conforme especificações
 const roleColors = [
-  { primary: "84 100% 60%", glow: "84 100% 50%" }, // Neon Lime
-  { primary: "84 80% 55%", glow: "84 90% 45%" },   // Lime variant 1
+  { primary: "84 100% 60%", glow: "84 100% 50%" }, // Neon Lime Principal
+  { primary: "84 95% 55%", glow: "84 100% 45%" },   // Lime variant 1
   { primary: "84 90% 65%", glow: "84 100% 55%" },  // Lime variant 2
   { primary: "84 85% 58%", glow: "84 95% 48%" },   // Lime variant 3
 ];
@@ -20,33 +38,18 @@ export default function Index() {
   const navigate = useNavigate();
   const [currentColorIndex, setCurrentColorIndex] = useState(0);
   const { isInstallable, isInstalled } = usePWAInstall();
-  const [selectedRole, setSelectedRole] = useState<"client" | "driver" | "admin" | null>(null);
+  const [selectedRole, setSelectedRole] = useState<"client" | "wholesale" | "driver" | "admin" | null>(null);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signup");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Check if user is already logged in
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        // Check user role and redirect accordingly
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
-        
-        if (profile?.role === 'driver') {
-          navigate("/driver/dashboard");
-        } else {
-          navigate("/catalog");
-        }
-      } else {
-        setLoading(false);
-      }
-    };
-    checkAuth();
-  }, [navigate]);
+    // Change colors every 3 seconds
+    const interval = setInterval(() => {
+      setCurrentColorIndex((prev) => (prev + 1) % roleColors.length);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []); // Agora inclui authChecked
 
   useEffect(() => {
     // Change colors every 3 seconds
@@ -71,26 +74,28 @@ export default function Index() {
     {
       id: "client" as const,
       title: "Cliente",
-      description: "Faça seus pedidos e acompanhe entregas",
+      description: "Faça pedidos, acompanhe entregas em tempo real",
       icon: User,
     },
     {
-      id: "driver" as const,
-      title: "Motorista",
-      description: "Gerencie suas entregas e rotas",
-      icon: Truck,
+      id: "wholesale" as const,
+      title: "Lojista",
+      description: "Condições especiais e preços diferenciados",
+      icon: Store,
     },
     {
-      id: "admin" as const,
-      title: "Administrador",
-      description: "Gerencie produtos e sistema",
-      icon: Shield,
+      id: "driver" as const,
+      title: "Motoboy",
+      description: "Gerencie rotas e aumente sua renda",
+      icon: Bike,
     },
   ];
 
   const handleAuthSuccess = () => {
     if (selectedRole === "driver") {
       navigate("/driver/dashboard");
+    } else if (selectedRole === "admin") {
+      navigate("/admin/dashboard");
     } else {
       navigate("/catalog");
     }
@@ -99,7 +104,7 @@ export default function Index() {
   // If a role is selected, show the auth form
   if (selectedRole) {
     return (
-      <div 
+      <div
         className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
         style={{
           background: `linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(${backgroundPattern})`,
@@ -112,9 +117,9 @@ export default function Index() {
           <Button
             variant="ghost"
             onClick={() => setSelectedRole(null)}
-            className="mb-4 hover:bg-primary/10 text-white"
+            className="mb-4 hover:bg-white/10 text-white"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
+            <ArrowLeft className="mr-2 h-3 w-3" />
             Voltar
           </Button>
 
@@ -128,7 +133,7 @@ export default function Index() {
             <Button
               variant="link"
               onClick={() => setAuthMode(authMode === "signin" ? "signup" : "signin")}
-              className="text-primary hover:text-primary/80"
+              className="text-white hover:text-white/80"
             >
               {authMode === "signin"
                 ? "Não tem conta? Cadastre-se"
@@ -141,7 +146,7 @@ export default function Index() {
   }
 
   return (
-    <div 
+    <div
       className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
       style={{
         background: `linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(${backgroundPattern})`,
@@ -150,8 +155,8 @@ export default function Index() {
         backgroundAttachment: "fixed",
       }}
     >
-      {/* Animated glow effect */}
-      <div 
+      {/* Efeito radial dinâmico com opacidade 15% */}
+      <div
         className="absolute inset-0 pointer-events-none transition-all duration-1000"
         style={{
           background: `radial-gradient(circle at 50% 50%, hsl(${currentColor.glow} / 0.15), transparent 60%)`,
@@ -160,19 +165,19 @@ export default function Index() {
 
       <div className="w-full max-w-6xl space-y-8 relative z-10">
         {/* Logo and Title */}
-        <div className="text-center space-y-4 animate-fade-in">
+        <div className="text-center space-y-4">
           <div className="flex justify-center mb-6">
             <img
               src={acrLogo}
               alt="ACR Logo"
-              className="h-24 w-auto drop-shadow-2xl"
+              className="h-16 w-auto drop-shadow-2xl animate-fade-in"
               style={{
                 filter: `drop-shadow(0 0 20px hsl(${currentColor.glow} / 0.6))`,
                 transition: "filter 1s ease-in-out",
               }}
             />
           </div>
-          <h1 
+          <h1
             className="text-5xl md:text-6xl font-bold transition-all duration-1000"
             style={{
               color: `hsl(${currentColor.primary})`,
@@ -181,34 +186,34 @@ export default function Index() {
           >
             ACR Delivery System
           </h1>
-          <p className="text-xl text-muted-foreground">
+          <p className="text-xl text-white/70">
             Selecione seu perfil de acesso
           </p>
-          
+
           {/* Install Button */}
           {(isInstallable || !isInstalled) && (
             <Button
               onClick={() => navigate("/install-pwa")}
               variant="outline"
-              className="mt-4 gap-2 border-2 transition-all duration-300 hover:scale-105"
+              className="mt-4 gap-2 border-2 transition-all duration-300 hover:scale-105 hover-neon"
               style={{
                 borderColor: `hsl(${currentColor.primary} / 0.5)`,
                 color: `hsl(${currentColor.primary})`,
                 boxShadow: `0 0 15px hsl(${currentColor.glow} / 0.3)`,
               }}
             >
-              <Download className="w-5 h-5" />
+              <Download className="w-4 h-4" />
               Instalar App
             </Button>
           )}
         </div>
 
         {/* Role Selection Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-scale-in">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {roles.map((role, index) => (
             <Card
               key={role.id}
-              className="group relative overflow-hidden border-2 transition-all duration-300 hover:scale-105 cursor-pointer bg-card/80 backdrop-blur-sm"
+              className="group relative overflow-hidden border-2 transition-all duration-300 hover:scale-105 cursor-pointer bg-card/80 backdrop-blur-sm hover:shadow-2xl animate-fade-in"
               style={{
                 borderColor: `hsl(${currentColor.primary} / 0.3)`,
                 boxShadow: `0 0 20px hsl(${currentColor.glow} / 0.2)`,
@@ -217,7 +222,7 @@ export default function Index() {
               onClick={() => setSelectedRole(role.id)}
             >
               {/* Animated border glow */}
-              <div 
+              <div
                 className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
                 style={{
                   background: `linear-gradient(135deg, hsl(${currentColor.primary} / 0.2), transparent)`,
@@ -225,35 +230,36 @@ export default function Index() {
               />
 
               <CardContent className="pt-8 pb-6 space-y-6 relative">
-                <div 
+                <div
                   className="mx-auto w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110"
                   style={{
                     background: `linear-gradient(135deg, hsl(${currentColor.primary} / 0.2), hsl(${currentColor.glow} / 0.1))`,
                     boxShadow: `0 0 30px hsl(${currentColor.glow} / 0.3)`,
                   }}
                 >
-                  <role.icon 
-                    className="w-10 h-10 transition-colors duration-300" 
+                  <role.icon
+                    className="w-8 h-8 transition-colors duration-300"
                     style={{ color: `hsl(${currentColor.primary})` }}
                   />
                 </div>
 
                 <div className="text-center space-y-2">
-                  <h3 
+                  <h3
                     className="text-2xl font-bold transition-colors duration-300"
                     style={{ color: `hsl(${currentColor.primary})` }}
                   >
                     {role.title}
                   </h3>
-                  <p className="text-muted-foreground">{role.description}</p>
+                  <p className="text-white/70">{role.description}</p>
                 </div>
 
                 <Button
-                  className="w-full font-semibold transition-all duration-300"
+                  className="w-full font-semibold transition-all duration-300 hover:scale-105 py-4 text-lg shadow-lg"
                   style={{
                     background: `hsl(${currentColor.primary})`,
                     color: "hsl(0 0% 0%)",
-                    boxShadow: `0 0 20px hsl(${currentColor.glow} / 0.5)`,
+                    boxShadow: `0 0 30px hsl(${currentColor.glow} / 0.7)`,
+                    border: `2px solid hsl(${currentColor.primary} / 0.5)`,
                   }}
                 >
                   Acessar
@@ -263,9 +269,23 @@ export default function Index() {
           ))}
         </div>
 
+        {/* Admin Icon - More visible in top right corner */}
+        <div className="absolute top-4 right-4">
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => setSelectedRole("admin")}
+            className="bg-white/10 hover:bg-white/20 text-white border-white/20 hover:border-white/40 shadow-lg backdrop-blur-sm px-4 py-2"
+            title="Área Administrativa"
+          >
+            <Shield className="h-5 w-5 mr-2" />
+            Admin
+          </Button>
+        </div>
+
         {/* Footer */}
-        <div className="text-center text-sm text-muted-foreground animate-fade-in">
-          <p>Sistema de gestão completo para entregas e vendas</p>
+        <div className="text-center text-sm text-white/50 animate-fade-in">
+          <p>Sistema de gestão completo para entregas e vendas • ACR Delivery 2025</p>
         </div>
       </div>
     </div>

@@ -15,6 +15,9 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminDrivers from "./pages/AdminDrivers_new";
 import AdminPromotions from "./pages/AdminPromotions";
 import AdminOrders from "./pages/AdminOrders";
+import EmailTemplates from "./pages/EmailTemplates";
+import AdminDeliveryConfigs from "./pages/AdminDeliveryConfigs";
+import AdminRatings from "./pages/AdminRatings";
 import NotFound from "./pages/NotFound";
 import Install from "./pages/Install";
 import InstallPWA from "./pages/InstallPWA";
@@ -25,14 +28,46 @@ import Privacy from "./pages/Privacy";
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [session, setSession] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<any>({ user: { id: 'test-user', email: 'test@example.com' } }); // Sessão fake para teste
+  const [loading, setLoading] = useState(false);
 
+  // Temporariamente desabilitado para testes
+  /*
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
+    const checkAuth = async () => {
+      try {
+        // Verificar sessão real do Supabase
+        const { data: { session: realSession } } = await supabase.auth.getSession();
+
+        // Verificar sessão de desenvolvimento
+        const devSession = localStorage.getItem('dev-session');
+        let parsedDevSession = null;
+
+        if (devSession) {
+          try {
+            parsedDevSession = JSON.parse(devSession);
+            // Verificar se a sessão não expirou (24 horas)
+            if (Date.now() - parsedDevSession.timestamp > 24 * 60 * 60 * 1000) {
+              localStorage.removeItem('dev-session');
+              parsedDevSession = null;
+            }
+          } catch (error) {
+            localStorage.removeItem('dev-session');
+          }
+        }
+
+        // Usar sessão real se existir, senão usar sessão de desenvolvimento
+        const effectiveSession = realSession || (parsedDevSession ? { user: parsedDevSession.user } : null);
+        setSession(effectiveSession);
+      } catch (error) {
+        console.error('Auth check error:', error);
+        setSession(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
 
     const {
       data: { subscription },
@@ -42,6 +77,7 @@ const App = () => {
 
     return () => subscription.unsubscribe();
   }, []);
+  */
 
   if (loading) {
     return (
@@ -65,39 +101,51 @@ const App = () => {
             />
             <Route
               path="/catalog"
-              element={session ? <Catalog /> : <Navigate to="/" />}
+              element={<Catalog />}
             />
             <Route
               path="/my-orders"
-              element={session ? <MyOrders /> : <Navigate to="/" />}
+              element={<MyOrders />}
             />
             <Route
               path="/order-tracking/:orderId"
-              element={session ? <OrderTracking /> : <Navigate to="/" />}
+              element={<OrderTracking />}
             />
             <Route
               path="/admin/products"
-              element={session ? <AdminProducts /> : <Navigate to="/" />}
+              element={<AdminProducts />}
             />
             <Route
               path="/admin/dashboard"
-              element={session ? <AdminDashboard /> : <Navigate to="/" />}
+              element={<AdminDashboard />}
             />
             <Route
               path="/admin/drivers"
-              element={session ? <AdminDrivers /> : <Navigate to="/" />}
+              element={<AdminDrivers />}
             />
             <Route
               path="/admin/promotions"
-              element={session ? <AdminPromotions /> : <Navigate to="/" />}
+              element={<AdminPromotions />}
             />
             <Route
               path="/admin/orders"
-              element={session ? <AdminOrders /> : <Navigate to="/" />}
+              element={<AdminOrders />}
+            />
+            <Route
+              path="/admin/templates"
+              element={<EmailTemplates />}
+            />
+            <Route
+              path="/admin/delivery-configs"
+              element={<AdminDeliveryConfigs />}
+            />
+            <Route
+              path="/admin/ratings"
+              element={<AdminRatings />}
             />
             <Route
               path="/driver/dashboard"
-              element={session ? <DriverDashboard /> : <Navigate to="/" />}
+              element={<DriverDashboard />}
             />
             <Route path="/install" element={<Install />} />
             <Route path="/install-pwa" element={<InstallPWA />} />

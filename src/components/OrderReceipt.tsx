@@ -18,7 +18,10 @@ interface OrderReceiptProps {
   shippingMethod: string;
   address?: string;
   customerType?: "regular" | "wholesale";
-  discount?: number;
+  wholesaleDiscount?: number;
+  couponDiscount?: number;
+  paymentMethod?: string;
+  couponCode?: string;
 }
 
 export default function OrderReceipt({
@@ -31,7 +34,10 @@ export default function OrderReceipt({
   shippingMethod,
   address,
   customerType = "regular",
-  discount = 0,
+  wholesaleDiscount = 0,
+  couponDiscount = 0,
+  paymentMethod,
+  couponCode,
 }: OrderReceiptProps) {
   const handlePrint = () => {
     window.print();
@@ -102,11 +108,18 @@ export default function OrderReceipt({
             <span>Subtotal:</span>
             <span>R$ {subtotal.toFixed(2)}</span>
           </div>
-          
-          {discount > 0 && (
+
+          {wholesaleDiscount > 0 && (
             <div className="flex justify-between text-sm text-primary">
               <span>Desconto Lojista:</span>
-              <span>- R$ {discount.toFixed(2)}</span>
+              <span>- R$ {wholesaleDiscount.toFixed(2)}</span>
+            </div>
+          )}
+
+          {couponCode && couponDiscount > 0 && (
+            <div className="flex justify-between text-sm text-green-600">
+              <span>Cupom {couponCode}:</span>
+              <span>- R$ {couponDiscount.toFixed(2)}</span>
             </div>
           )}
           
@@ -114,6 +127,13 @@ export default function OrderReceipt({
             <span>Frete:</span>
             <span>{shippingFee === 0 ? "GRÁTIS" : `R$ ${shippingFee.toFixed(2)}`}</span>
           </div>
+          
+          {paymentMethod && (
+            <div className="flex justify-between text-sm">
+              <span>Pagamento:</span>
+              <span>{paymentMethod}</span>
+            </div>
+          )}
           
           <Separator />
           

@@ -42,10 +42,7 @@ CREATE POLICY "Anyone can view active policies"
 CREATE POLICY "Admins can manage policies"
   ON public.policies FOR ALL
   USING (
-    EXISTS (
-      SELECT 1 FROM public.user_roles
-      WHERE user_id = auth.uid() AND role = 'admin'
-    )
+    public.has_role(auth.uid(), 'admin')
   );
 
 -- RLS Policies for policy_acceptances
@@ -60,10 +57,7 @@ CREATE POLICY "Users can accept policies"
 CREATE POLICY "Admins can view all acceptances"
   ON public.policy_acceptances FOR SELECT
   USING (
-    EXISTS (
-      SELECT 1 FROM public.user_roles
-      WHERE user_id = auth.uid() AND role = 'admin'
-    )
+    public.has_role(auth.uid(), 'admin')
   );
 
 -- Function to check if user has accepted current policies
@@ -94,13 +88,43 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Insert default policies
 INSERT INTO public.policies (type, version, title, content, is_active, effective_date) VALUES
 (
   'terms',
   '1.0',
   'Termos de Uso - ACR Delivery',
-  E'# Termos de Uso\n\n## 1. Aceitação dos Termos\nAo utilizar o ACR Delivery, você concorda com estes termos.\n\n## 2. Serviços Oferecidos\nO ACR Delivery é uma plataforma de entrega que conecta clientes, motoristas e estabelecimentos.\n\n## 3. Responsabilidades do Usuário\n- Fornecer informações verdadeiras\n- Manter a confidencialidade da conta\n- Usar o serviço de forma legal\n\n## 4. Pagamentos\n- Os pagamentos são processados de forma segura\n- Taxas de entrega são calculadas automaticamente\n\n## 5. Cancelamentos\n- Pedidos podem ser cancelados conforme política\n- Reembolsos seguem as regras estabelecidas\n\n## 6. Propriedade Intelectual\nTodo conteúdo é propriedade do ACR Delivery.\n\n## 7. Limitação de Responsabilidade\nO ACR Delivery não se responsabiliza por danos indiretos.\n\n## 8. Alterações nos Termos\nPodemos atualizar estes termos a qualquer momento.\n\n## 9. Contato\nPara dúvidas: contato@acrdelivery.com',
+  E'# Termos de Uso
+
+## 1. Aceitação dos Termos
+Ao utilizar o ACR Delivery, você concorda com estes termos.
+
+## 2. Serviços Oferecidos
+O ACR Delivery é uma plataforma de entrega que conecta clientes, motoristas e estabelecimentos.
+
+## 3. Responsabilidades do Usuário
+- Fornecer informações verdadeiras
+- Manter a confidencialidade da conta
+- Usar o serviço de forma legal
+
+## 4. Pagamentos
+- Os pagamentos são processados de forma segura
+- Taxas de entrega são calculadas automaticamente
+
+## 5. Cancelamentos
+- Pedidos podem ser cancelados conforme política
+- Reembolsos seguem as regras estabelecidas
+
+## 6. Propriedade Intelectual
+Todo conteúdo é propriedade do ACR Delivery.
+
+## 7. Limitação de Responsabilidade
+O ACR Delivery não se responsabiliza por danos indiretos.
+
+## 8. Alterações nos Termos
+Podemos atualizar estes termos a qualquer momento.
+
+## 9. Contato
+Para dúvidas: contato@acrdelivery.com',
   true,
   NOW()
 ),
@@ -108,7 +132,82 @@ INSERT INTO public.policies (type, version, title, content, is_active, effective
   'privacy',
   '1.0',
   'Política de Privacidade - ACR Delivery',
-  E'# Política de Privacidade\n\n## 1. Informações que Coletamos\n- Dados de cadastro (nome, email, telefone)\n- Endereços de entrega\n- Histórico de pedidos\n- Localização (para motoristas)\n\n## 2. Como Usamos suas Informações\n- Processar pedidos\n- Melhorar nossos serviços\n- Comunicação sobre pedidos\n- Análises e estatísticas\n\n## 3. Compartilhamento de Dados\n- Com motoristas (para entregas)\n- Com estabelecimentos (para pedidos)\n- Não vendemos seus dados\n\n## 4. Segurança\n- Criptografia de dados sensíveis\n- Acesso restrito a informações\n- Monitoramento de segurança\n\n## 5. Seus Direitos (LGPD)\n- Acesso aos seus dados\n- Correção de dados\n- Exclusão de dados\n- Portabilidade\n\n## 6. Cookies\nUsamos cookies para melhorar a experiência.\n\n## 7. Retenção de Dados\nMantemos dados pelo tempo necessário.\n\n## 8. Alterações na Política\nPodemos atualizar esta política.\n\n## 9. Contato\nDPO: privacidade@acrdelivery.com',
+  E'# Política de Privacidade
+
+## 1. Informações que Coletamos
+- Dados de cadastro (nome, email, telefone)
+- Endereços de entrega
+- Histórico de pedidos
+- Localização (para motoristas)
+
+## 2. Como Usamos suas Informações
+- Processar pedidos
+- Melhorar nossos serviços
+- Comunicação sobre pedidos
+- Análises e estatísticas
+
+## 3. Compartilhamento de Dados
+- Com motoristas (para entregas)
+- Com estabelecimentos (para pedidos)
+- Não vendemos seus dados
+
+## 4. Segurança
+- Criptografia de dados sensíveis
+- Acesso restrito a informações
+- Monitoramento de segurança
+
+## 5. Seus Direitos (LGPD)
+- Acesso aos seus dados
+- Correção de dados
+- Exclusão de dados
+- Portabilidade
+
+## 6. Cookies
+Usamos cookies para melhorar a experiência.
+
+## 7. Retenção de Dados
+Mantemos dados pelo tempo necessário.
+
+## 8. Alterações na Política
+Podemos atualizar esta política.
+
+## 9. Contato
+DPO: privacidade@acrdelivery.com',
+  true,
+  NOW()
+),
+(
+  'cookies',
+  '1.0',
+  'Política de Cookies - ACR Delivery',
+  E'# Política de Cookies
+
+## 1. O que são Cookies
+Cookies são pequenos arquivos de texto armazenados no seu dispositivo.
+
+## 2. Como Usamos Cookies
+- Melhorar a experiência do usuário
+- Manter você logado
+- Analisar o uso do site
+- Personalizar conteúdo
+
+## 3. Tipos de Cookies
+- **Essenciais**: Necessários para o funcionamento do site
+- **Analíticos**: Para entender como você usa o site
+- **Funcionais**: Para lembrar suas preferências
+- **Marketing**: Para anúncios relevantes
+
+## 4. Gerenciamento de Cookies
+Você pode gerenciar cookies nas configurações do seu navegador.
+
+## 5. Alterações na Política
+Podemos atualizar esta política de cookies.
+
+## 6. Contato
+Para dúvidas: contato@acrdelivery.com',
   true,
   NOW()
 );
+
+-- Create trigger for updated_at on policies
+CREATE TRIGGER update_policies_updated_at BEFORE UPDATE ON public.policies FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

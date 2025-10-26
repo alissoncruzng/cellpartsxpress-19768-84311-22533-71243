@@ -1,117 +1,59 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
-// https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+// Configuração simplificada do Vite
+export default defineConfig({
   server: {
-    host: "::",
-    port: 8080,
+    host: "0.0.0.0",
+    port: 3002, // Alterado para a porta 3002
+    strictPort: true, // Impede que o Vite tente usar outra porta se a 3002 estiver ocupada
+    open: true
   },
   plugins: [
     react(),
-    mode === "development" && componentTagger(),
     VitePWA({
-      registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "apple-touch-icon.png", "icon-192x192.png", "icon-512x512.png"],
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon-192x192.png', 'icon-512x512.png'],
       manifest: {
-        name: "ACR Delivery - Sistema de Gestão e Entregas",
-        short_name: "ACR Delivery",
-        description: "Sistema completo de delivery com rastreamento em tempo real e gestão inteligente",
-        theme_color: "#0a0f1a",
-        background_color: "#0a0f1a",
-        display: "standalone",
-        orientation: "portrait",
-        scope: "/",
-        start_url: "/",
-        categories: ["business", "productivity", "utilities"],
-        lang: "pt-BR",
-        dir: "ltr",
+        name: 'CellParts Express',
+        short_name: 'CellParts',
+        description: 'Sistema de Gestão de Peças',
+        theme_color: '#0a0f1a',
+        background_color: '#0a0f1a',
+        display: 'standalone',
+        start_url: '/',
         icons: [
           {
-            src: "/icon-192x192.png",
-            sizes: "192x192",
-            type: "image/png",
-            purpose: "any maskable",
+            src: '/icon-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any maskable'
           },
           {
-            src: "/icon-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any maskable",
-          },
-          {
-            src: "/apple-touch-icon.png",
-            sizes: "180x180",
-            type: "image/png",
-          },
-        ],
-        shortcuts: [
-          {
-            name: "Catálogo",
-            short_name: "Catálogo",
-            description: "Ver produtos disponíveis",
-            url: "/catalog",
-            icons: [{ src: "/icon-192x192.png", sizes: "192x192" }],
-          },
-        ],
-      },
-      devOptions: {
-        enabled: true,
-        type: "module",
+            src: '/icon-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable'
+          }
+        ]
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,woff,woff2}"],
-        cleanupOutdatedCaches: true,
-        skipWaiting: true,
-        clientsClaim: true,
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "google-fonts-cache",
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365,
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "supabase-cache",
-              networkTimeoutSeconds: 10,
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 5,
-              },
-            },
-          },
-          {
-            urlPattern: /\.(png|jpg|jpeg|svg|gif|webp)$/,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "images-cache",
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 30,
-              },
-            },
-          },
-        ],
-      },
-    }),
-  ].filter(Boolean),
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+      }
+    })
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
-}));
+  build: {
+    outDir: "dist",
+    emptyOutDir: true,
+  },
+  define: {
+    'process.env': {}
+  },
+});

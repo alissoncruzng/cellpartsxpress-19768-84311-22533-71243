@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { LogOut, ShoppingCart, Package, LayoutDashboard, Bike } from "lucide-react";
+import { LogOut, ShoppingCart, Package, LayoutDashboard, Bike, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -22,18 +22,31 @@ interface HeaderProps {
 export default function Header({ cartItemsCount = 0, userRole = "client" }: HeaderProps) {
   const navigate = useNavigate();
 
+  // Verificar se está em modo desenvolvimento
+  const isDevelopmentMode = localStorage.getItem('dev-session') !== null;
+
   const getDashboardPath = () => {
-    if (userRole === "driver") return "/driver/dashboard";
-    if (userRole === "admin") return "/admin/dashboard";
+    if (userRole === "driver") return "/driver";
+    if (userRole === "admin") return "/admin";
     return "/catalog";
   };
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      // Limpar sessão real do Supabase
+      const { error } = await supabase.auth.signOut();
+
+      // Limpar sessão de desenvolvimento
+      localStorage.removeItem('dev-session');
+
+      if (error) {
+        toast.error("Erro ao sair");
+      } else {
+        toast.success("Logout realizado com sucesso!");
+        navigate("/");
+      }
+    } catch (error) {
       toast.error("Erro ao sair");
-    } else {
-      toast.success("Logout realizado com sucesso!");
       navigate("/");
     }
   };
@@ -50,6 +63,7 @@ export default function Header({ cartItemsCount = 0, userRole = "client" }: Head
       { label: "Dashboard", icon: LayoutDashboard, path: "/admin/dashboard" },
       { label: "Produtos", icon: Package, path: "/admin/products" },
       { label: "Motoristas", icon: Bike, path: "/admin/drivers" },
+      { label: "Avaliações", icon: Star, path: "/admin/ratings" },
     ],
   };
 
@@ -63,7 +77,14 @@ export default function Header({ cartItemsCount = 0, userRole = "client" }: Head
             className="h-10 w-10 object-contain drop-shadow-[0_0_10px_rgba(196,255,0,0.4)]"
           />
           <div>
-            <h1 className="text-lg font-bold text-foreground">ACR Delivery</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold text-foreground">ACR Delivery</h1>
+              {isDevelopmentMode && (
+                <Badge variant="outline" className="text-xs bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+                  DEV MODE
+                </Badge>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">Sistema de Gestão</p>
           </div>
         </div>
