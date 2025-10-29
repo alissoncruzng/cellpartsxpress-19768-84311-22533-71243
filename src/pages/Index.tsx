@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { User, Shield, Download, ArrowLeft, Store, Bike } from "lucide-react";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
-import { supabase } from "@/lib/supabase";
+import supabase from '@/lib/supabase';
 import AuthForm from "@/components/AuthForm";
 import backgroundPattern from "@/assets/background-pattern.jpeg";
 import acrLogo from "@/assets/acr-logo-new.jpeg";

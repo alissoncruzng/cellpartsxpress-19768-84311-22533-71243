@@ -9,7 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { supabase } from "@/lib/supabase";
+import supabase from "@/lib/supabase";
 import { Bell, Check, Package, Truck, DollarSign, Megaphone } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
