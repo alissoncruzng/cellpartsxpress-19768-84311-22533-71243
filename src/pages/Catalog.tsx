@@ -1,645 +1,147 @@
-// @ts-nocheck - Types will be regenerated after migration
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShoppingCart, Search, Plus, Minus, Package, MessageCircle, Grid3x3, List, Receipt } from "lucide-react";
-import { toast } from "sonner";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Header from "@/components/Header";
-import ShippingCalculator from "@/components/ShippingCalculator";
-import OrderReceipt from "@/components/OrderReceipt";
-import { PaymentMethods } from "@/components/PaymentMethods";
-
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  category: string;
-  image_url: string;
-  stock: number;
-}
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/lib/supabase";
+import { LogOut, Package, ShoppingCart, User } from "lucide-react";
+import { toast } from "sonner";
 
 export default function Catalog() {
   const navigate = useNavigate();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [search, setSearch] = useState("");
-  const [cart, setCart] = useState<Map<string, number>>(new Map());
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [customerType, setCustomerType] = useState<"regular" | "wholesale">("regular");
-  const [shippingFee, setShippingFee] = useState(0);
-  const [shippingMethod, setShippingMethod] = useState("");
-  const [deliveryAddress, setDeliveryAddress] = useState("");
-  const [deliveryCep, setDeliveryCep] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<string>("");
-  const [couponCode, setCouponCode] = useState("");
-  const [couponDiscount, setCouponDiscount] = useState(0);
-  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
-  const [showReceipt, setShowReceipt] = useState(false);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
-
-  // Load cart from localStorage on mount
-  useEffect(() => {
-    const savedCart = localStorage.getItem('acr_cart');
-    if (savedCart) {
-      try {
-        const cartArray = JSON.parse(savedCart);
-        setCart(new Map(cartArray));
-      } catch (e) {
-        console.error('Error loading cart:', e);
-      }
-    }
-  }, []);
-
-  // Save cart to localStorage whenever it changes
-  useEffect(() => {
-    if (cart.size > 0) {
-      localStorage.setItem('acr_cart', JSON.stringify(Array.from(cart.entries())));
-    } else {
-      localStorage.removeItem('acr_cart');
-    }
-  }, [cart]);
 
   useEffect(() => {
-    loadProducts();
-  }, []);
-
-  const loadProducts = async () => {
-    try {
-      // @ts-ignore - Types will be regenerated after migration
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("is_active", true)
-        .order("name");
-
-      if (error) throw error;
-      setProducts(data || []);
-    } catch (error: any) {
-      toast.error("Erro ao carregar produtos");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const addToCart = (productId: string) => {
-    const product = products.find(p => p.id === productId);
-    if (!product) return;
-
-    const currentQty = cart.get(productId) || 0;
-    if (currentQty >= product.stock) {
-      toast.error("Quantidade máxima atingida");
-      return;
-    }
-
-    const newCart = new Map(cart);
-    newCart.set(productId, currentQty + 1);
-    setCart(newCart);
-    toast.success("Produto adicionado ao carrinho");
-  };
-
-  const removeFromCart = (productId: string) => {
-    const currentQty = cart.get(productId) || 0;
-    if (currentQty === 0) return;
-
-    const newCart = new Map(cart);
-    if (currentQty === 1) {
-      newCart.delete(productId);
-    } else {
-      newCart.set(productId, currentQty - 1);
-    }
-    setCart(newCart);
-  };
-
-  const getTotalItems = () => {
-    return Array.from(cart.values()).reduce((sum, qty) => sum + qty, 0);
-  };
-
-  const getSubtotal = () => {
-    let subtotal = 0;
-    cart.forEach((qty, productId) => {
-      const product = products.find(p => p.id === productId);
-      if (product) {
-        const price = customerType === "wholesale" ? product.price * 0.85 : product.price;
-        subtotal += price * qty;
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/login?role=client');
+        return;
       }
-    });
-    return subtotal;
-  };
 
-  const getWholesaleDiscount = () => {
-    if (customerType !== "wholesale") return 0;
-    return Array.from(cart.entries()).reduce((sum, [productId, qty]) => {
-      const product = products.find(p => p.id === productId);
-      if (!product) return sum;
-      const regularTotal = product.price * qty;
-      const wholesaleTotal = product.price * 0.85 * qty;
-      return sum + (regularTotal - wholesaleTotal);
-    }, 0);
-  };
-
-  const getNetSubtotal = () => {
-    const net = getSubtotal() - couponDiscount;
-    return net > 0 ? net : 0;
-  };
-
-  const getOrderTotal = () => {
-    const total = getNetSubtotal() + shippingFee;
-    return total > 0 ? total : 0;
-  };
-
-  const getReceiptItems = () =>
-    Array.from(cart.entries()).map(([productId, qty]) => {
-      const product = products.find(p => p.id === productId);
-      const price = customerType === "wholesale" ? product!.price * 0.85 : product!.price;
-      return {
-        name: product?.name || "Produto",
-        quantity: qty,
-        price,
-      };
-    });
-
-  const getReceiptSubtotal = () => {
-    let subtotal = 0;
-    cart.forEach((qty, productId) => {
-      const product = products.find(p => p.id === productId);
-      if (product) {
-        const price = customerType === "wholesale" ? product.price * 0.85 : product.price;
-        subtotal += price * qty;
-      }
-    });
-    return subtotal;
-  };
-
-  const applyCoupon = () => {
-    if (!couponCode.trim()) {
-      toast.error("Insira um código de cupom");
-      return;
-    }
-
-    // Simples validação de cupom (pode ser expandida para consultar API)
-    const validCoupons = {
-      "DESCONTO10": 0.1,
-      "PRIMEIRA20": 0.2,
-      "LOJISTA5": 0.05
-    };
-
-    const discount = validCoupons[couponCode.toUpperCase() as keyof typeof validCoupons];
-    if (discount) {
-      setCouponDiscount(getSubtotal() * discount);
-      setAppliedCoupon(couponCode.toUpperCase());
-      toast.success(`Cupom aplicado! ${Math.round(discount * 100)}% de desconto`);
-      setCouponCode("");
-    } else {
-      toast.error("Cupom inválido");
-    }
-  };
-
-  const removeCoupon = () => {
-    setCouponDiscount(0);
-    setAppliedCoupon(null);
-    toast.success("Cupom removido");
-  };
-
-  const filteredProducts = products.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.category.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const sendWhatsAppOrder = () => {
-    if (cart.size === 0) {
-      toast.error("Carrinho vazio");
-      return;
-    }
-
-    const subtotal = getSubtotal();
-    const wholesaleDiscount = getWholesaleDiscount();
-    const netSubtotal = getNetSubtotal();
-    const total = getOrderTotal();
-
-    let message = "🛒 *Novo Pedido ACR Delivery*\n\n";
-    
-    if (customerType === "wholesale") {
-      message += "⭐ *Cliente Lojista*\n\n";
-    }
-
-    cart.forEach((qty, productId) => {
-      const product = products.find(p => p.id === productId);
-      if (product) {
-        const price = customerType === "wholesale" ? product.price * 0.85 : product.price;
-        const itemTotal = price * qty;
-        message += `${qty}x ${product.name} - R$ ${itemTotal.toFixed(2)}\n`;
-      }
-    });
-
-    message += `\n📦 Subtotal: R$ ${subtotal.toFixed(2)}`;
-    if (wholesaleDiscount > 0) {
-      message += `\n💰 Desconto Lojista: -R$ ${wholesaleDiscount.toFixed(2)}`;
-    }
-    if (appliedCoupon && couponDiscount > 0) {
-      message += `\n🎫 Cupom ${appliedCoupon}: -R$ ${couponDiscount.toFixed(2)}`;
-    }
-    message += `\n🚚 Frete (${shippingMethod}): ${shippingFee === 0 ? "GRÁTIS" : `R$ ${shippingFee.toFixed(2)}`}`;
-    if (deliveryAddress) {
-      message += `\n📍 Endereço: ${deliveryAddress}`;
-    }
-    if (paymentMethod) {
-      message += `\n💳 Pagamento: ${paymentMethod}`;
-    }
-    message += `\n\n💵 *Total: R$ ${total.toFixed(2)}*`;
-    
-    const whatsappUrl = `https://wa.me/5511999999999?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-  };
-
-  const handleShippingCalculated = (fee: number, method: string, address: string, cep: string) => {
-    setShippingFee(fee);
-    setShippingMethod(method);
-    setDeliveryAddress(address);
-    setDeliveryCep(cep);
-  };
-
-  const createOrder = async () => {
-    if (cart.size === 0) {
-      toast.error("Carrinho vazio");
-      return;
-    }
-    if (!shippingMethod) {
-      toast.error("Calcule o frete primeiro");
-      return;
-    }
-    if (!paymentMethod) {
-      toast.error("Selecione um método de pagamento");
-      return;
-    }
-
-    setCheckoutLoading(true);
-    try {
-      // Temporarily disabled for testing - using fake session from App.tsx
-      // const { data: { user } } = await supabase.auth.getUser();
-      // if (!user) {
-      //   toast.error("Você precisa estar logado");
-      //   navigate("/auth");
-      //   return;
-      // }
-
-      // Create order
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          client_id: "test-user", // Fake user ID for testing
-          subtotal: getNetSubtotal(),
-          delivery_fee: shippingFee,
-          total: getOrderTotal(),
-          delivery_address: deliveryAddress,
-          delivery_cep: deliveryCep,
-          delivery_city: "São Paulo", // Extract from address in production
-          delivery_state: "SP",
-          status: "pending",
-          payment_method: paymentMethod,
-          coupon_code: appliedCoupon
-        })
-        .select()
+      // Get user profile
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
         .single();
 
-      if (orderError) throw orderError;
+      if (error || profile?.role !== 'client') {
+        navigate('/login?role=client');
+        return;
+      }
 
-      // Create order items
-      const orderItems = Array.from(cart.entries()).map(([productId, quantity]) => {
-        const product = products.find(p => p.id === productId);
-        const price = customerType === "wholesale" ? product!.price * 0.85 : product!.price;
-        return {
-          order_id: order.id,
-          product_id: productId,
-          quantity,
-          price
-        };
-      });
+      setUser(profile);
+      setLoading(false);
+    };
 
-      const { error: itemsError } = await supabase
-        .from("order_items")
-        .insert(orderItems);
+    checkAuth();
+  }, [navigate]);
 
-      if (itemsError) throw itemsError;
-
-      toast.success("Pedido criado com sucesso!");
-      setCart(new Map());
-      localStorage.removeItem('acr_cart');
-      navigate("/my-orders");
-    } catch (error: any) {
-      console.error("Error creating order:", error);
-      toast.error("Erro ao criar pedido");
-    } finally {
-      setCheckoutLoading(false);
-    }
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.success("Logout realizado com sucesso!");
+    navigate('/');
   };
 
-  const generateReceipt = () => {
-    if (cart.size === 0) {
-      toast.error("Carrinho vazio");
-      return;
-    }
-    if (!shippingMethod) {
-      toast.error("Calcule o frete primeiro");
-      return;
-    }
-    if (!paymentMethod) {
-      toast.error("Selecione um método de pagamento");
-      return;
-    }
-    setShowReceipt(true);
-  };
-
-  if (showReceipt) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-card to-background p-8">
-        <Button
-          onClick={() => setShowReceipt(false)}
-          variant="ghost"
-          className="mb-4"
-        >
-          ← Voltar ao Catálogo
-        </Button>
-        <OrderReceipt
-          orderNumber={`ACR-${Date.now().toString().slice(-6)}`}
-          date={new Date().toLocaleString('pt-BR')}
-          items={getReceiptItems()}
-          subtotal={getSubtotal()}
-          shippingFee={shippingFee}
-          total={getOrderTotal()}
-          shippingMethod={shippingMethod}
-          address={deliveryAddress}
-          customerType={customerType}
-          wholesaleDiscount={getWholesaleDiscount()}
-          couponDiscount={couponDiscount}
-          paymentMethod={paymentMethod}
-          couponCode={appliedCoupon}
-        />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-card to-background">
-      <Header cartItemsCount={getTotalItems()} userRole="client" />
-      
-      <div className="container mx-auto p-4 md:p-8 space-y-6">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Main Content */}
-          <div className="flex-1 space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-3xl font-bold text-foreground">Catálogo de Produtos</h1>
-                <p className="text-muted-foreground">Escolha seus produtos e faça seu pedido</p>
-              </div>
-              
-              <div className="flex gap-2">
-                <Tabs value={customerType} onValueChange={(v) => setCustomerType(v as "regular" | "wholesale")}>
-                  <TabsList>
-                    <TabsTrigger value="regular">Cliente</TabsTrigger>
-                    <TabsTrigger value="wholesale">Lojista</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <Package className="h-8 w-8 text-primary mr-2" />
+              <h1 className="text-xl font-bold text-gray-900">ACR Delivery</h1>
             </div>
-
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar produtos..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              
-              <div className="flex gap-1 border rounded-lg p-1">
-                <Button
-                  variant={viewMode === "grid" ? "default" : "ghost"}
-                  size="icon"
-                  onClick={() => setViewMode("grid")}
-                >
-                  <Grid3x3 className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "list" ? "default" : "ghost"}
-                  size="icon"
-                  onClick={() => setViewMode("list")}
-                >
-                  <List className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-4"}>
-              {filteredProducts.map((product) => {
-                const displayPrice = customerType === "wholesale" ? product.price * 0.85 : product.price;
-                
-                return (
-                  <Card key={product.id} className={`overflow-hidden hover:shadow-lg transition-shadow ${viewMode === "list" ? "flex" : ""}`}>
-                    <div className={`${viewMode === "grid" ? "aspect-video" : "w-32"} bg-muted relative overflow-hidden flex-shrink-0`}>
-                      {product.image_url ? (
-                        <img
-                          src={product.image_url}
-                          alt={product.name}
-                          className="object-cover w-full h-full"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Package className="w-12 h-12 text-muted-foreground" />
-                        </div>
-                      )}
-                      <Badge className="absolute top-2 right-2">{product.category}</Badge>
-                    </div>
-                    
-                    <div className="flex-1">
-                      <CardHeader>
-                        <CardTitle className="flex items-center justify-between">
-                          {product.name}
-                          {customerType === "wholesale" && (
-                            <Badge variant="secondary" className="ml-2">-15%</Badge>
-                          )}
-                        </CardTitle>
-                        <CardDescription>{product.description}</CardDescription>
-                      </CardHeader>
-                      
-                      <CardContent>
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-1">
-                            {customerType === "wholesale" && (
-                              <span className="text-sm text-muted-foreground line-through block">
-                                R$ {product.price.toFixed(2)}
-                              </span>
-                            )}
-                            <span className="text-2xl font-bold text-primary">
-                              R$ {displayPrice.toFixed(2)}
-                            </span>
-                          </div>
-                          <span className="text-sm text-muted-foreground">
-                            Estoque: {product.stock}
-                          </span>
-                        </div>
-                      </CardContent>
-                      
-                      <CardFooter className="flex gap-2">
-                        {cart.has(product.id) ? (
-                          <div className="flex items-center gap-2 w-full">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => removeFromCart(product.id)}
-                            >
-                              <Minus className="h-4 w-4" />
-                            </Button>
-                            <span className="flex-1 text-center font-semibold">
-                              {cart.get(product.id)}
-                            </span>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => addToCart(product.id)}
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <Button onClick={() => addToCart(product.id)} className="w-full">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Adicionar
-                          </Button>
-                        )}
-                      </CardFooter>
-                    </div>
-                  </Card>
-                );
-              })}
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-700">Olá, {user?.full_name}</span>
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sair
+              </Button>
             </div>
           </div>
+        </div>
+      </header>
 
-          {/* Sidebar - Cart & Shipping */}
-          {getTotalItems() > 0 && (
-            <div className="lg:w-96 space-y-4">
-              <Card className="sticky top-4">
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="px-4 py-6 sm:px-0">
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Catálogo de Peças</h2>
+            <p className="text-gray-600">Bem-vindo ao sistema de pedidos ACR Delivery</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Placeholder cards for products */}
+            {[1, 2, 3, 4, 5, 6].map((item) => (
+              <Card key={item} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ShoppingCart className="h-5 w-5" />
-                    Carrinho ({getTotalItems()} itens)
-                  </CardTitle>
+                  <CardTitle className="text-lg">Produto {item}</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Resumo do pedido */}
-                  <div className="space-y-3 p-4 bg-muted/30 rounded-lg">
-                    <div className="flex justify-between text-sm">
-                      <span>Subtotal:</span>
-                      <span className="font-semibold">R$ {getSubtotal().toFixed(2)}</span>
-                    </div>
-                    {customerType === "wholesale" && getWholesaleDiscount() > 0 && (
-                      <div className="flex justify-between text-sm text-primary">
-                        <span>Desconto Lojista (15%):</span>
-                        <span className="font-semibold">-R$ {getWholesaleDiscount().toFixed(2)}</span>
-                      </div>
-                    )}
-                    {appliedCoupon && couponDiscount > 0 && (
-                      <div className="flex justify-between text-sm text-green-600">
-                        <span>Cupom {appliedCoupon}:</span>
-                        <span className="font-semibold">-R$ {couponDiscount.toFixed(2)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-lg font-bold border-t pt-3">
-                      <span>Total:</span>
-                      <span className="text-primary">R$ {getOrderTotal().toFixed(2)}</span>
-                    </div>
+                <CardContent>
+                  <div className="aspect-square bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
+                    <Package className="h-12 w-12 text-gray-400" />
                   </div>
-
-                  {/* Cupom */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Receipt className="h-4 w-4 text-muted-foreground" />
-                      <Label className="text-sm font-medium">Código de Cupom</Label>
-                    </div>
-                    <div className="flex gap-2">
-                      <Input
-                        value={couponCode}
-                        onChange={(e) => setCouponCode(e.target.value)}
-                        placeholder="Ex: DESCONTO10"
-                        disabled={appliedCoupon !== null}
-                        className="flex-1"
-                      />
-                      {appliedCoupon ? (
-                        <Button variant="outline" onClick={removeCoupon} size="sm">
-                          Remover
-                        </Button>
-                      ) : (
-                        <Button onClick={applyCoupon} size="sm">
-                          Aplicar
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Método de Pagamento */}
-                  <div className="border-t pt-6">
-                    <PaymentMethods
-                      selectedMethod={paymentMethod}
-                      onMethodSelect={setPaymentMethod}
-                    />
-                  </div>
-
-                  {/* Botões de ação */}
-                  <div className="space-y-3 pt-6 border-t">
-                    <Button
-                      onClick={createOrder}
-                      disabled={!shippingMethod || !paymentMethod || checkoutLoading}
-                      className="w-full h-12 text-lg font-semibold"
-                      size="lg"
-                    >
-                      {checkoutLoading ? (
-                        <>Processando...</>
-                      ) : (
-                        <>Finalizar Pedido</>
-                      )}
+                  <p className="text-sm text-gray-600 mb-4">
+                    Descrição do produto {item}. Este é um exemplo de peça disponível no catálogo.
+                  </p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-bold text-primary">R$ {(item * 25.99).toFixed(2)}</span>
+                    <Button size="sm">
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                      Comprar
                     </Button>
-
-                    <div className="grid grid-cols-1 gap-2">
-                      <Button
-                        onClick={sendWhatsAppOrder}
-                        disabled={!shippingMethod || !paymentMethod}
-                        variant="outline"
-                        className="w-full bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700"
-                      >
-                        <MessageCircle className="mr-2 h-4 w-4" />
-                        Enviar via WhatsApp
-                      </Button>
-
-                      <Button
-                        onClick={generateReceipt}
-                        disabled={!shippingMethod || !paymentMethod}
-                        variant="outline"
-                        className="w-full"
-                      >
-                        <Receipt className="mr-2 h-4 w-4" />
-                        Gerar Cupom Fiscal
-                      </Button>
-                    </div>
                   </div>
                 </CardContent>
               </Card>
+            ))}
+          </div>
 
-              <ShippingCalculator
-                subtotal={getSubtotal()}
-                onShippingCalculated={handleShippingCalculated}
-              />
-            </div>
-          )}
+          {/* User Info Card */}
+          <div className="mt-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <User className="h-5 w-5 mr-2" />
+                  Informações da Conta
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Nome</p>
+                    <p className="text-sm text-gray-900">{user?.full_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Email</p>
+                    <p className="text-sm text-gray-900">{user?.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Tipo de Conta</p>
+                    <p className="text-sm text-gray-900 capitalize">{user?.role}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Status</p>
+                    <p className="text-sm text-gray-900">
+                      {user?.is_approved ? 'Aprovado' : 'Pendente de Aprovação'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
