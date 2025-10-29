@@ -1,0 +1,25 @@
+# railway.toml
+# Configuração para deploy no Railway
+# CellPartsXpress Delivery - React + Vite + Supabase
+
+[build]
+builder = "NIXPACKS"
+buildCommand = "npm install && npm run build"
+
+[start]
+startCommand = "npm run preview -- --port $PORT"
+
+[env]
+VITE_SUPABASE_URL = "https://seu-projeto.supabase.co"
+VITE_SUPABASE_PUBLISHABLE_KEY = "sua_anon_key"
+VITE_ADMIN_EMAIL = "acrsolucoessbc@gmail.com"
+VITE_ADMIN_PASSWORD = "Cruz@*879170#Sbc"
+VITE_ADMIN_PHONE = "5511986004922"
+VITE_WHATSAPP_BUSINESS_PHONE = "5511946698650"
+
+# Caso use banco PostgreSQL interno do Railway
+DATABASE_URL = "postgresql://usuario:senha@host:porta/database"
+
+# Nome do projeto no Railway
+[project]
+name = "cellpartsxpress-delivery"

@@ -18,11 +18,13 @@ import {
   FileText,
   Send
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useUser } from "@/hooks/useUser";
+import { useNavigate } from "react-router-dom";
 
 interface PendingUser {
   id: string;
@@ -56,40 +58,20 @@ export default function AdminDashboard() {
   });
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const { user } = useUser();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    checkAdminAccess();
-    loadDashboardData();
-  }, []);
-
-  const checkAdminAccess = async () => {
-    try {
-      // Temporarily disabled for testing - using fake session from App.tsx
-      // const { data: { user } } = await supabase.auth.getUser();
-      // if (!user) {
-      //   window.location.href = "/";
-      //   return;
-      // }
-
-      // // Verificar se o usuário é admin
-      // const { data: profile } = await supabase
-      //   .from("profiles")
-      //   .select("*")
-      //   .eq("id", user.id)
-      //   .single();
-
-      // if (!profile || profile.role !== "admin") {
-      //   window.location.href = "/";
-      //   return;
-      // }
-
-      // setCurrentUser(user);
-      setCurrentUser({ email: "admin@xpress.com" });
-    } catch (error) {
-      console.error("Erro ao verificar acesso admin:", error);
-      // window.location.href = "/";
+    if (user) {
+      loadDashboardData();
+    } else {
+      setLoading(false);
     }
+  }, [user]);
+
+  const checkAdminAccess = () => {
+    // Verificação feita pelo ProtectedRoute
+    return true;
   };
 
   const loadDashboardData = async () => {
@@ -208,10 +190,10 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-4">
             <div className="text-right">
               <p className="text-white/70 text-sm">Administrador</p>
-              <p className="text-white text-sm">{currentUser?.email}</p>
+              <p className="text-white text-sm">{user?.email}</p>
             </div>
             <Button
-              onClick={() => window.location.href = "/"}
+              onClick={() => navigate("/")}
               variant="outline"
               className="border-white/20 text-white hover:bg-white/10"
             >
@@ -290,20 +272,14 @@ export default function AdminDashboard() {
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="pending" className="space-y-6">
-          <TabsList className="bg-white/5 border border-white/10">
-            <TabsTrigger value="pending" className="text-white data-[state=active]:bg-purple-500/20">
-              Aprovações Pendentes
-            </TabsTrigger>
-            <TabsTrigger value="users" className="text-white data-[state=active]:bg-purple-500/20">
-              Todos os Usuários
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="text-white data-[state=active]:bg-purple-500/20">
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="templates" className="text-white data-[state=active]:bg-purple-500/20">
-              Templates
-            </TabsTrigger>
+        <Tabs defaultValue="approvals" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+            <TabsTrigger value="users">Usuários</TabsTrigger>
+            <TabsTrigger value="analytics">Relatórios</TabsTrigger>
+            <TabsTrigger value="approvals">Cadastros</TabsTrigger>
+            <TabsTrigger value="templates">Templates</TabsTrigger>
+            <TabsTrigger value="settings">Configurações</TabsTrigger>
           </TabsList>
 
           <TabsContent value="pending" className="space-y-6">
@@ -436,6 +412,26 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="approvals" className="space-y-6">
+            <Card className="bg-white/5 border-white/10 backdrop-blur-xl">
+              <CardHeader>
+                <CardTitle className="text-white">Aprovação de Cadastros</CardTitle>
+                <CardDescription className="text-white/70">
+                  Gerencie cadastros pendentes de lojistas e motoboys
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <Shield className="mx-auto h-12 w-12 text-yellow-400 mb-4" />
+                  <p className="text-white/70">Sistema de aprovações em desenvolvimento</p>
+                  <p className="text-white/50 text-sm mt-2">
+                    Em breve você poderá aprovar/rejeitar cadastros aqui
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="templates" className="space-y-6">

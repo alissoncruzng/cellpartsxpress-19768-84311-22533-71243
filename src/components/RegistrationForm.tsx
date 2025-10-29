@@ -8,12 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface RegistrationFormProps {
-  userEmail: string;
+  userPhone: string;
   userRole: "client" | "wholesale" | "driver" | "admin";
   onSuccess: () => void;
 }
 
-export default function RegistrationForm({ userEmail, userRole, onSuccess }: RegistrationFormProps) {
+export default function RegistrationForm({ userPhone, userRole, onSuccess }: RegistrationFormProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     full_name: "",

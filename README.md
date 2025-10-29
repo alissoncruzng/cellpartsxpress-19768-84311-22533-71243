@@ -1,73 +1,196 @@
-# Welcome to your Lovable project
+# 📱 **CellPartsXpress Delivery**
 
-## Project info
+## 🚀 **Sistema de Delivery Completo com Supabase**
 
-**URL**: https://lovable.dev/projects/ba370afb-8f89-4ba2-9077-ee2ad2cba8b9
+Aplicação web para sistema de delivery de peças de celular, desenvolvida com React, TypeScript, Vite e Supabase.
 
-## How can I edit this code?
+### **🎯 Funcionalidades Principais:**
+- ✅ **Autenticação:** Login/Cadastro com email e senha
+- ✅ **Sistema Multi-Role:** Cliente, Motorista, Admin
+- ✅ **Dashboard Admin:** Gerenciamento completo do negócio
+- ✅ **Catálogo de Produtos:** Interface moderna com filtros
+- ✅ **Sistema de Pedidos:** Acompanhamento em tempo real
+- ✅ **Upload de Arquivos:** Imagens de produtos e documentos
+- ✅ **Notificações:** Sistema de notificações do navegador
+- ✅ **PWA:** Progressive Web App otimizado
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+## 🛠️ **Tecnologias Utilizadas**
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/ba370afb-8f89-4ba2-9077-ee2ad2cba8b9) and start prompting.
+### **Frontend:**
+- **React 18** com TypeScript
+- **Vite** (build tool ultra-rápido)
+- **shadcn-ui** (component library moderna)
+- **Tailwind CSS** (styling utility-first)
+- **React Router** (navegação SPA)
+- **React Hook Form** (formulários)
 
-Changes made via Lovable will be committed automatically to this repo.
+### **Backend:**
+- **Supabase** (PostgreSQL + Auth + Storage)
+- **Row Level Security** (RLS)
+- **Real-time subscriptions**
+- **File storage** para uploads
 
-**Use your preferred IDE**
+---
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🚀 **Como Executar**
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### **Pré-requisitos:**
+- Node.js 18+
+- npm ou yarn
+- Conta no [Supabase](https://supabase.com)
 
-Follow these steps:
+### **1. Clone o projeto:**
+```bash
+git clone <seu-repositorio>
+cd cellpartsxpress-19768-84311-22533-71243
+```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### **2. Instale dependências:**
+```bash
+npm install
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### **3. Configure o Supabase:**
 
-# Step 3: Install the necessary dependencies.
-npm i
+#### **a) Crie um projeto no Supabase:**
+- Acesse [supabase.com](https://supabase.com)
+- Crie um novo projeto
+- Vá em **Settings > API**
+- Copie **URL** e **anon/public key**
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+#### **b) Configure as variáveis de ambiente:**
+```bash
+# No arquivo .env
+VITE_SUPABASE_URL=sua_supabase_url
+VITE_SUPABASE_PUBLISHABLE_KEY=sua_supabase_anon_key
+VITE_ADMIN_EMAIL=admin@cellpartsxpress.com
+VITE_ADMIN_PASSWORD=admin123
+VITE_ADMIN_PHONE=5511999999999
+VITE_WHATSAPP_BUSINESS_PHONE=5511946698650
+```
+
+#### **c) Execute as migrations:**
+- No Supabase Dashboard, vá em **SQL Editor**
+- Execute os scripts da pasta `supabase/`
+- Configure as políticas RLS conforme documentado
+
+### **4. Teste a conexão:**
+```bash
+npm run supabase:test
+```
+
+### **5. Execute o projeto:**
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Acesse: **http://localhost:5173**
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+## 📋 **Scripts Disponíveis**
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```bash
+npm run dev              # Servidor de desenvolvimento
+npm run build           # Build para produção
+npm run build:dev       # Build em modo desenvolvimento
+npm run lint            # Verificação de código
+npm run preview         # Preview do build
+npm run supabase:test   # Teste da conexão Supabase
+```
 
-## What technologies are used for this project?
+---
 
-This project is built with:
+## 🏗️ **Estrutura do Projeto**
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```
+src/
+├── components/          # Componentes React
+│   ├── ui/             # Componentes base (shadcn-ui)
+│   ├── auth/           # Autenticação
+│   ├── admin/          # Painel administrativo
+│   └── driver/          # Dashboard motorista
+├── pages/              # Páginas da aplicação
+├── hooks/              # Hooks customizados
+├── integrations/       # Integrações externas
+│   └── supabase/       # Cliente e tipos Supabase
+└── lib/                # Utilitários e configurações
+    ├── supabase.ts     # Cliente Supabase principal
+    ├── storage.ts      # Upload de arquivos
+    └── utils.ts        # Funções utilitárias
+```
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/ba370afb-8f89-4ba2-9077-ee2ad2cba8b9) and click on Share -> Publish.
+## 🌐 **Deploy**
 
-## Can I connect a custom domain to my Lovable project?
+### **Build Otimizado:**
+```bash
+npm run build
+```
 
-Yes, you can!
+### **Upload:**
+- Faça upload da pasta `dist/` para qualquer hosting estático
+- Recomendado: **Vercel**, **Netlify**, **Railway**, ou **Render**
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### **Variáveis de Ambiente no Hosting:**
+Configure as mesmas variáveis do `.env` no painel do seu hosting.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+---
+
+## 🔧 **Configuração Supabase**
+
+### **Tabelas Necessárias:**
+- `profiles` - Perfis de usuários
+- `products` - Catálogo de produtos
+- `orders` - Pedidos
+- `drivers` - Motoristas
+- `order_tracking` - Rastreamento de pedidos
+- `user_notifications` - Permissões de notificação
+
+### **Autenticação:**
+- Email/Senha configurado
+- RLS habilitado
+- Políticas de segurança implementadas
+
+### **Storage:**
+- Buckets: `products`, `avatars`, `documents`
+- Políticas RLS configuradas
+
+---
+
+## 📱 **Login Admin**
+
+**Email:** `admin@cellpartsxpress.com`  
+**Senha:** `admin123`
+
+---
+
+## 🆘 **Suporte**
+
+### **Problemas Comuns:**
+
+**1. Erro de conexão Supabase:**
+- Verifique as variáveis de ambiente
+- Execute `npm run supabase:test`
+
+**2. Erro de autenticação:**
+- Configure as credenciais admin no `.env`
+- Verifique se o usuário existe no Supabase
+
+**3. Erro de upload:**
+- Configure os buckets no Supabase Storage
+- Verifique as políticas RLS
+
+---
+
+## 📄 **Licença**
+
+Este projeto é privado e proprietário da CellPartsXpress.
+
+---
+
+**🎯 Status:** ✅ **100% Funcional com Supabase**  
+**🚀 Pronto para deploy em qualquer hosting estático!**

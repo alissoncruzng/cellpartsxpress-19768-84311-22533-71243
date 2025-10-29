@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { requestNotificationPermission, onMessageListener } from '@/lib/firebase';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 export const useNotifications = (userRole?: string) => {
@@ -16,22 +15,26 @@ export const useNotifications = (userRole?: string) => {
 
   const requestPermission = async () => {
     try {
-      const token = await requestNotificationPermission();
-      
-      if (token) {
-        setFcmToken(token);
+      if (!('Notification' in window)) {
+        toast.error('Este navegador não suporta notificações');
+        return null;
+      }
+
+      const permission = await Notification.requestPermission();
+
+      if (permission === 'granted') {
         setNotificationPermission('granted');
-        
-        // Save token to database
+
+        // Save permission to database
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          await saveFCMToken(user.id, token, userRole);
+          await saveNotificationPermission(user.id, true, userRole);
         }
-        
+
         toast.success('Notificações ativadas!');
-        return token;
+        return 'granted';
       } else {
-        toast.error('Não foi possível ativar notificações');
+        toast.error('Permissão de notificação negada');
         return null;
       }
     } catch (error) {
@@ -41,26 +44,16 @@ export const useNotifications = (userRole?: string) => {
     }
   };
 
-  const saveFCMToken = async (userId: string, token: string, role?: string) => {
+  const saveNotificationPermission = async (userId: string, granted: boolean, role?: string) => {
     try {
-      // Check if token already exists
-      const { data: existing } = await supabase
-        .from('fcm_tokens')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('token', token)
-        .single();
-
-      if (!existing) {
-        await supabase.from('fcm_tokens').insert({
-          user_id: userId,
-          token: token,
-          device_type: getDeviceType(),
-          user_role: role || 'client',
-        });
-      }
+      await supabase.from('user_notifications').upsert({
+        user_id: userId,
+        permission_granted: granted,
+        device_type: getDeviceType(),
+        user_role: role || 'client',
+      });
     } catch (error) {
-      console.error('Error saving FCM token:', error);
+      console.error('Error saving notification permission:', error);
     }
   };
 
@@ -71,32 +64,23 @@ export const useNotifications = (userRole?: string) => {
     return 'web';
   };
 
-  // Listen for foreground messages
-  useEffect(() => {
-    const unsubscribe = onMessageListener().then((payload: any) => {
-      if (payload) {
-        const { notification } = payload;
-        
-        // Show toast notification
-        toast(notification.title || 'Nova Notificação', {
-          description: notification.body,
-          duration: 5000,
-        });
+  // Simple notification function using browser notifications
+  const showNotification = (title: string, options?: NotificationOptions) => {
+    if (notificationPermission === 'granted') {
+      new Notification(title, options);
 
-        // Play notification sound
-        const audio = new Audio('/notification-sound.mp3');
-        audio.play().catch(e => console.log('Could not play sound:', e));
-      }
-    });
-
-    return () => {
-      // Cleanup if needed
-    };
-  }, []);
+      // Show toast notification
+      toast(title, {
+        description: options?.body,
+        duration: 5000,
+      });
+    }
+  };
 
   return {
     notificationPermission,
     fcmToken,
     requestPermission,
+    showNotification,
   };
 };

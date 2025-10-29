@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { User, Shield, Download, ArrowLeft, Store, Bike } from "lucide-react";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import AuthForm from "@/components/AuthForm";
 import backgroundPattern from "@/assets/background-pattern.jpeg";
 import acrLogo from "@/assets/acr-logo-new.jpeg";
@@ -40,30 +40,35 @@ export default function Index() {
   const { isInstallable, isInstalled } = usePWAInstall();
   const [selectedRole, setSelectedRole] = useState<"client" | "wholesale" | "driver" | "admin" | null>(null);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signup");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Começar com loading true
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // Simular carregamento mínimo para reduzir pisca
+    const timer = setTimeout(() => {
+      setLoading(false);
+      setMounted(true);
+    }, 500);
+
     // Change colors every 3 seconds
     const interval = setInterval(() => {
       setCurrentColorIndex((prev) => (prev + 1) % roleColors.length);
     }, 3000);
 
-    return () => clearInterval(interval);
-  }, []); // Agora inclui authChecked
-
-  useEffect(() => {
-    // Change colors every 3 seconds
-    const interval = setInterval(() => {
-      setCurrentColorIndex((prev) => (prev + 1) % roleColors.length);
-    }, 3000);
-
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, []);
 
+  // Loading state melhorado
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-400 mx-auto"></div>
+          <p className="text-green-400 text-lg font-medium">Carregando ACR Delivery...</p>
+        </div>
       </div>
     );
   }
@@ -85,7 +90,7 @@ export default function Index() {
     },
     {
       id: "driver" as const,
-      title: "Motoboy",
+      title: "Entregador",
       description: "Gerencie rotas e aumente sua renda",
       icon: Bike,
     },
@@ -96,6 +101,8 @@ export default function Index() {
       navigate("/driver/dashboard");
     } else if (selectedRole === "admin") {
       navigate("/admin/dashboard");
+    } else if (selectedRole === "wholesale") {
+      navigate("/wholesale/dashboard");
     } else {
       navigate("/catalog");
     }
@@ -187,7 +194,7 @@ export default function Index() {
             ACR Delivery System
           </h1>
           <p className="text-xl text-white/70">
-            Selecione seu perfil de acesso
+            Selecione seu perfil: Cliente, Lojista ou Entregador
           </p>
 
           {/* Install Button */}
@@ -208,79 +215,151 @@ export default function Index() {
           )}
         </div>
 
-        {/* Role Selection Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {roles.map((role, index) => (
-            <Card
-              key={role.id}
-              className="group relative overflow-hidden border-2 transition-all duration-300 hover:scale-105 cursor-pointer bg-card/80 backdrop-blur-sm hover:shadow-2xl animate-fade-in"
-              style={{
-                borderColor: `hsl(${currentColor.primary} / 0.3)`,
-                boxShadow: `0 0 20px hsl(${currentColor.glow} / 0.2)`,
-                animationDelay: `${index * 150}ms`,
-              }}
-              onClick={() => setSelectedRole(role.id)}
-            >
-              {/* Animated border glow */}
-              <div
-                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                style={{
-                  background: `linear-gradient(135deg, hsl(${currentColor.primary} / 0.2), transparent)`,
-                }}
-              />
-
-              <CardContent className="pt-8 pb-6 space-y-6 relative">
-                <div
-                  className="mx-auto w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110"
-                  style={{
-                    background: `linear-gradient(135deg, hsl(${currentColor.primary} / 0.2), hsl(${currentColor.glow} / 0.1))`,
-                    boxShadow: `0 0 30px hsl(${currentColor.glow} / 0.3)`,
-                  }}
-                >
-                  <role.icon
-                    className="w-8 h-8 transition-colors duration-300"
-                    style={{ color: `hsl(${currentColor.primary})` }}
-                  />
-                </div>
-
-                <div className="text-center space-y-2">
-                  <h3
-                    className="text-2xl font-bold transition-colors duration-300"
-                    style={{ color: `hsl(${currentColor.primary})` }}
-                  >
-                    {role.title}
-                  </h3>
-                  <p className="text-white/70">{role.description}</p>
-                </div>
-
-                <Button
-                  className="w-full font-semibold transition-all duration-300 hover:scale-105 py-4 text-lg shadow-lg"
-                  style={{
-                    background: `hsl(${currentColor.primary})`,
-                    color: "hsl(0 0% 0%)",
-                    boxShadow: `0 0 30px hsl(${currentColor.glow} / 0.7)`,
-                    border: `2px solid hsl(${currentColor.primary} / 0.5)`,
-                  }}
-                >
-                  Acessar
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Admin Icon - More visible in top right corner */}
-        <div className="absolute top-4 right-4">
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={() => setSelectedRole("admin")}
-            className="bg-white/10 hover:bg-white/20 text-white border-white/20 hover:border-white/40 shadow-lg backdrop-blur-sm px-4 py-2"
-            title="Área Administrativa"
+        {/* Role Selection Cards - Layout Simplificado */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl">
+          {/* Card Cliente */}
+          <Card
+            className="group relative overflow-hidden border-2 transition-all duration-300 hover:scale-105 cursor-pointer bg-card/80 backdrop-blur-sm hover:shadow-2xl animate-fade-in"
+            style={{
+              borderColor: `hsl(${currentColor.primary} / 0.3)`,
+              boxShadow: `0 0 20px hsl(${currentColor.glow} / 0.2)`,
+              animationDelay: `0ms`,
+            }}
+            onClick={() => setSelectedRole("client")}
           >
-            <Shield className="h-5 w-5 mr-2" />
-            Admin
-          </Button>
+            <CardContent className="pt-8 pb-6 space-y-6 relative">
+              <div
+                className="mx-auto w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110"
+                style={{
+                  background: `linear-gradient(135deg, hsl(${currentColor.primary} / 0.2), hsl(${currentColor.glow} / 0.1))`,
+                  boxShadow: `0 0 30px hsl(${currentColor.glow} / 0.3)`,
+                }}
+              >
+                <User
+                  className="w-8 h-8 transition-colors duration-300"
+                  style={{ color: `hsl(${currentColor.primary})` }}
+                />
+              </div>
+
+              <div className="text-center space-y-2">
+                <h3
+                  className="text-2xl font-bold transition-colors duration-300"
+                  style={{ color: `hsl(${currentColor.primary})` }}
+                >
+                  Cliente
+                </h3>
+                <p className="text-white/70">Faça pedidos e acompanhe entregas</p>
+              </div>
+
+              <Button
+                className="w-full font-semibold transition-all duration-300 hover:scale-105 py-4 text-lg shadow-lg"
+                style={{
+                  background: `hsl(${currentColor.primary})`,
+                  color: "hsl(0 0% 0%)",
+                  boxShadow: `0 0 30px hsl(${currentColor.glow} / 0.7)`,
+                  border: `2px solid hsl(${currentColor.primary} / 0.5)`,
+                }}
+              >
+                Acessar como Cliente
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Card Motoboy/Entregador */}
+          <Card
+            className="group relative overflow-hidden border-2 transition-all duration-300 hover:scale-105 cursor-pointer bg-card/80 backdrop-blur-sm hover:shadow-2xl animate-fade-in"
+            style={{
+              borderColor: `hsl(${currentColor.primary} / 0.3)`,
+              boxShadow: `0 0 20px hsl(${currentColor.glow} / 0.2)`,
+              animationDelay: `150ms`,
+            }}
+            onClick={() => setSelectedRole("driver")}
+          >
+            <CardContent className="pt-8 pb-6 space-y-6 relative">
+              <div
+                className="mx-auto w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110"
+                style={{
+                  background: `linear-gradient(135deg, hsl(${currentColor.primary} / 0.2), hsl(${currentColor.glow} / 0.1))`,
+                  boxShadow: `0 0 30px hsl(${currentColor.glow} / 0.3)`,
+                }}
+              >
+                <Bike
+                  className="w-8 h-8 transition-colors duration-300"
+                  style={{ color: `hsl(${currentColor.primary})` }}
+                />
+              </div>
+
+              <div className="text-center space-y-2">
+                <h3
+                  className="text-2xl font-bold transition-colors duration-300"
+                  style={{ color: `hsl(${currentColor.primary})` }}
+                >
+                  Motoboy
+                </h3>
+                <p className="text-white/70">Gerencie entregas e aumente sua renda</p>
+              </div>
+
+              <Button
+                className="w-full font-semibold transition-all duration-300 hover:scale-105 py-4 text-lg shadow-lg"
+                style={{
+                  background: `hsl(${currentColor.primary})`,
+                  color: "hsl(0 0% 0%)",
+                  boxShadow: `0 0 30px hsl(${currentColor.glow} / 0.7)`,
+                  border: `2px solid hsl(${currentColor.primary} / 0.5)`,
+                }}
+              >
+                Acessar como Motoboy
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Card Lojista */}
+          <Card
+            className="group relative overflow-hidden border-2 transition-all duration-300 hover:scale-105 cursor-pointer bg-card/80 backdrop-blur-sm hover:shadow-2xl animate-fade-in"
+            style={{
+              borderColor: `hsl(${currentColor.primary} / 0.3)`,
+              boxShadow: `0 0 20px hsl(${currentColor.glow} / 0.2)`,
+              animationDelay: `300ms`,
+            }}
+            onClick={() => setSelectedRole("wholesale")}
+          >
+            <CardContent className="pt-8 pb-6 space-y-6 relative">
+              <div
+                className="mx-auto w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110"
+                style={{
+                  background: `linear-gradient(135deg, hsl(${currentColor.primary} / 0.2), hsl(${currentColor.glow} / 0.1))`,
+                  boxShadow: `0 0 30px hsl(${currentColor.glow} / 0.3)`,
+                }}
+              >
+                <Store
+                  className="w-8 h-8 transition-colors duration-300"
+                  style={{ color: `hsl(${currentColor.primary})` }}
+                />
+              </div>
+
+              <div className="text-center space-y-2">
+                <h3
+                  className="text-2xl font-bold transition-colors duration-300"
+                  style={{ color: `hsl(${currentColor.primary})` }}
+                >
+                  Lojista
+                </h3>
+                <p className="text-white/70">Gerencie produtos e pedidos especiais</p>
+              </div>
+
+              <Button
+                className="w-full font-semibold transition-all duration-300 hover:scale-105 py-4 text-lg shadow-lg"
+                style={{
+                  background: `hsl(${currentColor.primary})`,
+                  color: "hsl(0 0% 0%)",
+                  boxShadow: `0 0 30px hsl(${currentColor.glow} / 0.7)`,
+                  border: `2px solid hsl(${currentColor.primary} / 0.5)`,
+                }}
+              >
+                Acessar como Lojista
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Footer */}

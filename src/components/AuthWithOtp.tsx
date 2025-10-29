@@ -1,11 +1,20 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Mail, Lock, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import RegistrationForm from "./RegistrationForm";
+import { Label } from "@/components/ui/label";
+import { Mail, Lock, Loader2, ArrowLeft, Facebook, Chrome, CheckCircle, AlertCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 import backgroundPattern from "@/assets/background-pattern.jpeg";
+
+// Extend window type for reCAPTCHA
+declare global {
+  interface Window {
+    // recaptchaVerifier: RecaptchaVerifier; // Not needed with Supabase
+  }
+}
 
 interface AuthWithOtpProps {
   role: "client" | "wholesale" | "driver" | "admin";
@@ -16,6 +25,7 @@ const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL
   ? import.meta.env.VITE_ADMIN_EMAIL.trim().replace(/^['"]|['"]$/g, "")
   : undefined;
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
+
 const NORMALIZED_ADMIN_EMAIL = ADMIN_EMAIL?.toLowerCase();
 
 // Paleta de Cores Dinâmica - 4 variações de verde neon lime conforme especificações
@@ -27,12 +37,12 @@ const roleColors = [
 ];
 
 export default function AuthWithOtp({ role, onSuccess }: AuthWithOtpProps) {
-  const [step, setStep] = useState<"email" | "code" | "register">("email");
   const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error" | "info">("info");
+  const [isLogin, setIsLogin] = useState(true); // true = login, false = cadastro
   const [currentColorIndex, setCurrentColorIndex] = useState(0);
 
   useEffect(() => {
@@ -46,130 +56,123 @@ export default function AuthWithOtp({ role, onSuccess }: AuthWithOtpProps) {
 
   const currentColor = roleColors[currentColorIndex];
 
-  const sendOtp = async () => {
-    if (!email) {
-      setMessage("Por favor, digite seu e-mail");
-      setMessageType("error");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!supabase) {
+      toast.error("Sistema de autenticação não configurado. Contate o suporte.");
+      return;
+    }
+
+    if (!email || !password) {
+      toast.error("Preencha todos os campos");
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error("A senha deve ter no mínimo 6 caracteres");
       return;
     }
 
     setLoading(true);
-    setMessage("");
 
     try {
-      // 🎯 MODO DESENVOLVIMENTO: Bypass para evitar erro 429
-      const isDevelopment = import.meta.env.DEV;
+      if (isLogin) {
+        // Login
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
-      if (isDevelopment) {
-        // Simular delay de rede
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        if (error) throw error;
 
-        // 🎯 TEMPORÁRIO: Gerar código fixo para teste (desenvolvimento)
-        const testCode = "123456";
-        console.log("🎯 CÓDIGO DE TESTE:", testCode);
-        console.log("📧 Email:", email);
-        console.log("⚠️  Este é um código de teste para desenvolvimento!");
-        console.log("💡 Para produção, configure SMTP no Supabase Dashboard");
-
-        setStep("code");
-        setMessage("Código enviado para seu e-mail (verifique o console do navegador - F12)");
-        setMessageType("success");
-        return;
-      }
-
-      // Modo produção - chamada real ao Supabase
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: { role }
-        }
-      });
-
-      if (error) throw error;
-
-      setStep("code");
-      setMessage("Código enviado para seu e-mail");
-      setMessageType("success");
-    } catch (error: any) {
-      setMessage(error.message || "Erro ao enviar código");
-      setMessageType("error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const verifyOtp = async () => {
-    if (!code) {
-      setMessage("Por favor, digite o código");
-      setMessageType("error");
-      return;
-    }
-
-    setLoading(true);
-    setMessage("");
-
-    try {
-      // 🎯 MODO DESENVOLVIMENTO: Bypass para aceitar código de teste
-      const isDevelopment = import.meta.env.DEV;
-
-      if (isDevelopment && code === "123456") {
-        // Simular delay de verificação
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Simular criação de sessão para desenvolvimento
-        const mockUser = {
-          id: `dev-user-${Date.now()}`,
-          email: email,
-          user_metadata: { role: role },
-          created_at: new Date().toISOString(),
-        };
-
-        // Armazenar informações do usuário logado no localStorage (simulação)
-        localStorage.setItem('dev-session', JSON.stringify({
-          user: mockUser,
-          role: role,
-          timestamp: Date.now()
-        }));
-
-        console.log("✅ Código de teste aceito!");
-        console.log("🔐 Login simulado realizado com sucesso");
-        console.log("👤 Usuário:", mockUser);
-
-        setMessage("✅ Login realizado com sucesso!");
-        setMessageType("success");
-        setTimeout(() => onSuccess(), 1500);
-        return;
-      }
-
-      // Modo produção - verificação real
-      const { data, error } = await supabase.auth.verifyOtp({
-        email,
-        token: code,
-        type: 'email'
-      });
-
-      if (error) throw error;
-
-      // Verificar se é primeiro acesso (usuário novo)
-      if (data.user?.user_metadata?.new_user) {
-        setStep("register");
-        setMessage("Complete seu cadastro");
-        setMessageType("info");
+        toast.success("Login realizado com sucesso!");
+        onSuccess();
       } else {
-        setMessage("✅ Login realizado com sucesso!");
-        setMessageType("success");
-        setTimeout(() => onSuccess(), 1500);
+        // Cadastro direto sem confirmação
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              role,
+              email_confirm: true, // Conta já confirmada
+            },
+          },
+        });
+
+        if (error) throw error;
+
+        // Criar perfil automaticamente
+        if (data.user) {
+          try {
+            // Primeiro verificar se o perfil já existe
+            const { data: existingProfile } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('id', data.user.id)
+              .single();
+
+            // Só criar se não existir
+            if (!existingProfile) {
+              const { error: profileError } = await supabase
+                .from('profiles')
+                .insert({
+                  id: data.user.id,
+                  email: email,
+                  role: role,
+                  is_approved: role === 'admin', // Admin aprovado automaticamente
+                  is_blocked: false,
+                  full_name: email.split('@')[0], // Nome temporário
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                });
+
+              if (profileError) {
+                console.error('Erro ao criar perfil:', profileError);
+                // Não falhar completamente se for erro de perfil duplicado
+                if (!profileError.message?.includes('duplicate key')) {
+                  toast.error("Conta criada, mas houve um problema no perfil. Contate o suporte.");
+                }
+              }
+            }
+          } catch (profileCheckError) {
+            console.error('Erro ao verificar perfil existente:', profileCheckError);
+          }
+        }
+
+        toast.success("Conta criada com sucesso! Você já pode fazer login.");
+        setIsLogin(true); // Mudar para modo login
       }
     } catch (error: any) {
-      setMessage(error.message || "Código inválido");
-      setMessageType("error");
+      console.error('Erro:', error);
+
+      // Tratamento específico de erros
+      if (error.message?.includes('Email not confirmed')) {
+        toast.error("Email não confirmado. Verifique sua caixa de entrada ou tente se cadastrar novamente.");
+        setIsLogin(false); // Mudar para modo cadastro
+      } else if (error.message?.includes('Invalid login credentials')) {
+        toast.error("Email ou senha incorretos. Verifique suas credenciais.");
+      } else if (error.message?.includes('User already registered')) {
+        toast.success("Usuário já cadastrado! Faça login com suas credenciais.");
+        setIsLogin(true); // Mudar para modo login
+      } else {
+        toast.error(error.message || "Erro na autenticação");
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAdminLogin = async () => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!supabase) {
+      setMessage("Sistema de autenticação não configurado. Contate o suporte.");
+      setMessageType("error");
+      return;
+    }
+
     if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
       setMessage("Credenciais de administrador não configuradas. Contate o suporte.");
       setMessageType("error");
@@ -188,18 +191,14 @@ export default function AuthWithOtp({ role, onSuccess }: AuthWithOtpProps) {
     setMessage("");
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: ADMIN_EMAIL!,
-        password: ADMIN_PASSWORD
+      const { error } = await supabase.auth.signInWithPassword({
+        email: ADMIN_EMAIL,
+        password: ADMIN_PASSWORD,
       });
-
       if (error) throw error;
-
       setMessage("✅ Login de administrador realizado!");
       setMessageType("success");
-      setTimeout(() => {
-        window.location.href = "/admin/dashboard";
-      }, 1500);
+      setTimeout(() => onSuccess(), 1500);
     } catch (error: any) {
       setMessage("Credenciais de administrador inválidas");
       setMessageType("error");
@@ -209,9 +208,9 @@ export default function AuthWithOtp({ role, onSuccess }: AuthWithOtpProps) {
   };
 
   // Se estiver na etapa de registro, mostrar o formulário de registro
-  if (step === "register") {
-    return <RegistrationForm userEmail={email} userRole={role} onSuccess={onSuccess} />;
-  }
+  // if (step === "register") {
+  //   return <RegistrationForm userPhone={phone} userRole={role} onSuccess={onSuccess} />;
+  // }
 
   return (
     <div
@@ -260,149 +259,124 @@ export default function AuthWithOtp({ role, onSuccess }: AuthWithOtpProps) {
               transition={{ delay: 0.5 }}
               className="text-white/80"
             >
-              {role === "client" && "Acesse como cliente"}
-              {role === "wholesale" && "Acesse como lojista"}
-              {role === "driver" && "Acesse como motoboy"}
-              {role === "admin" && "Painel administrativo"}
+              {isLogin ? "Faça login com seu email e senha" : "Crie sua conta"}
             </motion.p>
           </div>
 
-          <AnimatePresence mode="wait">
-            {step === "email" && (
-              <motion.div
-                key="email"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="space-y-6"
+          <form onSubmit={role === "admin" ? handleAdminLogin : handleSubmit} className="space-y-6">
+            {/* Login Social */}
+            <div className="space-y-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full border-blue-600 text-blue-600 hover:bg-blue-50"
+                onClick={() => toast.info("Login com Gmail em breve!")}
               >
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 h-5 w-5" />
-                  <Input
-                    type="email"
-                    placeholder="Digite seu e-mail"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40"
-                  />
-                </div>
+                <Chrome className="w-4 h-4 mr-2" />
+                Continuar com Gmail
+              </Button>
 
-                {role === "admin" && NORMALIZED_ADMIN_EMAIL && (
-                  <p className="text-sm text-white/60">
-                    Email de admin configurado: <span className="font-semibold">{ADMIN_EMAIL}</span>
-                  </p>
-                )}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full border-blue-800 text-blue-800 hover:bg-blue-50"
+                onClick={() => toast.info("Login com Facebook em breve!")}
+              >
+                <Facebook className="w-4 h-4 mr-2" />
+                Continuar com Facebook
+              </Button>
+            </div>
 
-                {role === "admin" ? (
-                  <Button
-                    onClick={handleAdminLogin}
-                    disabled={loading}
-                    className="w-full font-semibold transition-all duration-300 hover:scale-105 py-3"
-                    style={{
-                      background: `hsl(${currentColor.primary})`,
-                      color: "hsl(0 0% 0%)",
-                      boxShadow: `0 0 20px hsl(${currentColor.glow} / 0.5)`,
-                    }}
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Verificando...
-                      </>
-                    ) : (
-                      "Acessar como Administrador"
-                    )}
-                  </Button>
+            {/* Separator */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-white/20" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-transparent px-2 text-white/60">Ou</span>
+              </div>
+            </div>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 h-5 w-5" />
+              <Input
+                type="email"
+                placeholder="Digite seu e-mail"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40"
+              />
+            </div>
+
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 h-5 w-5" />
+              <Input
+                type="password"
+                placeholder="Digite sua senha"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40"
+              />
+            </div>
+
+            {role === "admin" && ADMIN_EMAIL && (
+              <p className="text-sm text-white/60">
+                Admin: {ADMIN_EMAIL}
+              </p>
+            )}
+
+            {role === "admin" ? (
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full font-semibold transition-all duration-300 hover:scale-105 py-3"
+                style={{
+                  background: `hsl(${currentColor.primary})`,
+                  color: "hsl(0 0% 0%)",
+                  boxShadow: `0 0 20px hsl(${currentColor.glow} / 0.5)`,
+                }}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verificando...
+                  </>
                 ) : (
-                  <Button
-                    onClick={sendOtp}
-                    disabled={loading}
-                    className="w-full font-semibold transition-all duration-300 hover:scale-105 py-3"
-                    style={{
-                      background: `hsl(${currentColor.primary})`,
-                      color: "hsl(0 0% 0%)",
-                      boxShadow: `0 0 20px hsl(${currentColor.glow} / 0.5)`,
-                    }}
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Enviando código...
-                      </>
-                    ) : (
-                      "Enviar código"
-                    )}
-                  </Button>
+                  "Acessar como Administrador"
                 )}
-              </motion.div>
-            )}
-
-            {step === "code" && (
-              <motion.div
-                key="code"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="space-y-6"
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full font-semibold transition-all duration-300 hover:scale-105 py-3"
+                style={{
+                  background: `hsl(${currentColor.primary})`,
+                  color: "hsl(0 0% 0%)",
+                  boxShadow: `0 0 20px hsl(${currentColor.glow} / 0.5)`,
+                }}
               >
-                <div className="text-center">
-                  <p className="text-white/80 mb-4">
-                    Digite o código de 6 dígitos enviado para:
-                  </p>
-                  <p className="text-white font-medium">{email}</p>
-                </div>
-
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 h-5 w-5" />
-                  <Input
-                    type="text"
-                    placeholder="000000"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    maxLength={6}
-                    className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 text-center text-2xl tracking-widest"
-                  />
-                </div>
-
-                <div className="flex gap-3">
-                  <Button
-                    onClick={() => setStep("email")}
-                    variant="outline"
-                    className="flex-1 border-white/20 text-white hover:bg-white/10"
-                  >
-                    Voltar
-                  </Button>
-                  <Button
-                    onClick={verifyOtp}
-                    disabled={loading || code.length !== 6}
-                    className="flex-1 font-semibold transition-all duration-300 hover:scale-105 py-3"
-                    style={{
-                      background: `hsl(${currentColor.primary})`,
-                      color: "hsl(0 0% 0%)",
-                      boxShadow: `0 0 20px hsl(${currentColor.glow} / 0.5)`,
-                    }}
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Verificando...
-                      </>
-                    ) : (
-                      "Verificar código"
-                    )}
-                  </Button>
-                </div>
-
-                <Button
-                  onClick={sendOtp}
-                  variant="ghost"
-                  className="w-full text-white/70 hover:text-white hover:bg-white/5"
-                >
-                  Enviar novo código
-                </Button>
-              </motion.div>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {isLogin ? "Entrando..." : "Criando conta..."}
+                  </>
+                ) : (
+                  isLogin ? "Entrar" : "Criar Conta"
+                )}
+              </Button>
             )}
-          </AnimatePresence>
+
+            {!loading && role !== "admin" && (
+              <Button
+                type="button"
+                onClick={() => setIsLogin(!isLogin)}
+                variant="outline"
+                className="w-full border-white/20 text-white hover:bg-white/10"
+              >
+                {isLogin ? "Não tenho conta - Criar conta" : "Já tenho conta - Fazer login"}
+              </Button>
+            )}
+          </form>
 
           <AnimatePresence>
             {message && (

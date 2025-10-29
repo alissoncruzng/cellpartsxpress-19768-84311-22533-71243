@@ -67,44 +67,26 @@ export function VerifyCode() {
 
     setLoading(true);
     try {
-      // Verifica o código no localStorage (apenas para teste)
-      const savedCode = localStorage.getItem('verification_code');
-      const savedEmail = localStorage.getItem('verification_email');
-      const expiresAt = parseInt(localStorage.getItem('verification_expires') || '0');
-
-      if (Date.now() > expiresAt) {
-        throw new Error('Código expirado. Solicite um novo código.');
-      }
-
-      if (savedCode !== fullCode || savedEmail !== email) {
-        throw new Error('Código inválido');
-      }
-
-      // Limpa os dados de verificação
-      localStorage.removeItem('verification_code');
-      localStorage.removeItem('verification_email');
-      localStorage.removeItem('verification_expires');
-
-      // Faz login do usuário
-      const { data, error } = await supabase.auth.signInWithOtp({
+      // Verifica o código usando Supabase
+      const { data, error } = await supabase.auth.verifyOtp({
         email,
-        options: {
-          data: {
-            user_type: userType
-          }
-        }
+        token: fullCode,
+        type: 'email'
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro na verificação:', error);
+        throw error;
+      }
 
       // Redireciona para completar o cadastro
       navigate('/complete-registration', {
         state: { userType }
       });
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao verificar código:', error);
-      toast.error('Código inválido. Tente novamente.');
+      toast.error('Código inválido ou expirado. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -115,22 +97,24 @@ export function VerifyCode() {
 
     setLoading(true);
     try {
-      // Gera um novo código (apenas para teste)
-      const newCode = '123456';
-      
-      // Salva o novo código no localStorage (apenas para teste)
-      localStorage.setItem('verification_code', newCode);
-      localStorage.setItem('verification_email', email);
-      localStorage.setItem('verification_expires', (Date.now() + 15 * 60 * 1000).toString());
-      
-      // Em produção, você usaria algo como:
-      // await supabase.functions.invoke('send-verification-email', {
-      //   body: { email, code: newCode }
-      // });
-      
+      // Reenvia o código usando Supabase
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          data: {
+            user_type: userType
+          }
+        }
+      });
+
+      if (error) {
+        console.error('Erro ao reenviar código:', error);
+        throw error;
+      }
+
       setCountdown(60);
-      toast.success('Novo código: ' + newCode); // Apenas para teste
-    } catch (error) {
+      toast.success('Novo código enviado! Verifique seu e-mail.');
+    } catch (error: any) {
       console.error('Erro ao reenviar código:', error);
       toast.error('Erro ao reenviar código. Tente novamente.');
     } finally {

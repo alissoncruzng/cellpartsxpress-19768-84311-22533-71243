@@ -329,3 +329,99 @@ a:hover {
     margin-top: 1rem;
   }
 }
+
+/* Melhorias de responsividade e usabilidade mobile */
+@media (max-width: 768px) {
+  /* Ícones menores no mobile */
+  .lucide {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+  }
+
+  /* Botões maiores e mais fáceis de tocar */
+  .btn-mobile-touch {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    padding: 0.75rem 1rem !important;
+  }
+
+  /* Header mais compacto */
+  header .container {
+    padding: 0.75rem 1rem !important;
+  }
+
+  /* Logo menor no mobile */
+  header img {
+    height: 1.5rem !important;
+    width: 1.5rem !important;
+  }
+
+  /* Texto do header menor */
+  header .text-xl {
+    font-size: 1.125rem !important;
+  }
+
+  /* Navigation items com padding maior para toque */
+  header nav a {
+    padding: 0.75rem 1rem !important;
+    min-height: 44px !important;
+  }
+
+  /* Dropdown menu items maiores */
+  [role="menuitem"] {
+    padding: 0.75rem 1rem !important;
+    min-height: 44px !important;
+  }
+
+  /* Avatar do usuário maior para toque */
+  [data-radix-collection-item] button {
+    height: 44px !important;
+    width: 44px !important;
+  }
+
+  /* Badge do carrinho mais visível */
+  .relative .absolute {
+    height: 1.25rem !important;
+    width: 1.25rem !important;
+    font-size: 0.75rem !important;
+  }
+}
+
+/* Melhorias para tablets */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .lucide {
+    width: 1.125rem !important;
+    height: 1.125rem !important;
+  }
+
+  header nav a {
+    padding: 0.5rem 0.75rem !important;
+  }
+}
+
+/* Prevenir zoom no iOS */
+@media screen and (max-width: 767px) {
+  input[type="email"],
+  input[type="password"],
+  input[type="text"],
+  input[type="tel"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Melhorar contraste e legibilidade */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Corrigir fundo verde - tornar transparente */
+.text-primary {
+  background-color: transparent !important;
+  color: hsl(var(--primary)) !important;
+}

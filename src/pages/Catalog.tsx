@@ -1,6 +1,6 @@
 // @ts-nocheck - Types will be regenerated after migration
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import ShippingCalculator from "@/components/ShippingCalculator";
 import OrderReceipt from "@/components/OrderReceipt";
+import { PaymentMethods } from "@/components/PaymentMethods";
 
 interface Product {
   id: string;
@@ -532,8 +533,9 @@ export default function Catalog() {
                     Carrinho ({getTotalItems()} itens)
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
+                <CardContent className="space-y-6">
+                  {/* Resumo do pedido */}
+                  <div className="space-y-3 p-4 bg-muted/30 rounded-lg">
                     <div className="flex justify-between text-sm">
                       <span>Subtotal:</span>
                       <span className="font-semibold">R$ {getSubtotal().toFixed(2)}</span>
@@ -541,7 +543,7 @@ export default function Catalog() {
                     {customerType === "wholesale" && getWholesaleDiscount() > 0 && (
                       <div className="flex justify-between text-sm text-primary">
                         <span>Desconto Lojista (15%):</span>
-                        <span className="font-semibold">-R$ {getWholesaleDiscount().toFixed(2())}</span>
+                        <span className="font-semibold">-R$ {getWholesaleDiscount().toFixed(2)}</span>
                       </div>
                     )}
                     {appliedCoupon && couponDiscount > 0 && (
@@ -550,28 +552,32 @@ export default function Catalog() {
                         <span className="font-semibold">-R$ {couponDiscount.toFixed(2)}</span>
                       </div>
                     )}
-                    <div className="flex justify-between text-lg font-bold border-t pt-2">
+                    <div className="flex justify-between text-lg font-bold border-t pt-3">
                       <span>Total:</span>
                       <span className="text-primary">R$ {getOrderTotal().toFixed(2)}</span>
                     </div>
                   </div>
 
                   {/* Cupom */}
-                  <div className="space-y-2">
-                    <Label>Código de Cupom</Label>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Receipt className="h-4 w-4 text-muted-foreground" />
+                      <Label className="text-sm font-medium">Código de Cupom</Label>
+                    </div>
                     <div className="flex gap-2">
                       <Input
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value)}
                         placeholder="Ex: DESCONTO10"
                         disabled={appliedCoupon !== null}
+                        className="flex-1"
                       />
                       {appliedCoupon ? (
-                        <Button variant="outline" onClick={removeCoupon}>
+                        <Button variant="outline" onClick={removeCoupon} size="sm">
                           Remover
                         </Button>
                       ) : (
-                        <Button onClick={applyCoupon}>
+                        <Button onClick={applyCoupon} size="sm">
                           Aplicar
                         </Button>
                       )}
@@ -579,31 +585,20 @@ export default function Catalog() {
                   </div>
 
                   {/* Método de Pagamento */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold">Método de Pagamento *</Label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {["Dinheiro", "Cartão de Crédito", "Cartão de Débito", "PIX"].map((method) => (
-                        <Button
-                          key={method}
-                          variant={paymentMethod === method ? "default" : "outline"}
-                          onClick={() => setPaymentMethod(method)}
-                          className={`h-12 text-sm font-medium transition-all duration-200 ${
-                            paymentMethod === method
-                              ? "bg-primary text-primary-foreground shadow-lg scale-105 border-2 border-primary"
-                              : "hover:bg-primary/10 hover:border-primary/50"
-                          }`}
-                        >
-                          {method}
-                        </Button>
-                      ))}
-                    </div>
+                  <div className="border-t pt-6">
+                    <PaymentMethods
+                      selectedMethod={paymentMethod}
+                      onMethodSelect={setPaymentMethod}
+                    />
                   </div>
 
-                  <div className="flex flex-col gap-2">
+                  {/* Botões de ação */}
+                  <div className="space-y-3 pt-6 border-t">
                     <Button
                       onClick={createOrder}
                       disabled={!shippingMethod || !paymentMethod || checkoutLoading}
-                      className="w-full"
+                      className="w-full h-12 text-lg font-semibold"
+                      size="lg"
                     >
                       {checkoutLoading ? (
                         <>Processando...</>
@@ -611,24 +606,28 @@ export default function Catalog() {
                         <>Finalizar Pedido</>
                       )}
                     </Button>
-                    <Button
-                      onClick={sendWhatsAppOrder}
-                      disabled={!shippingMethod || !paymentMethod}
-                      variant="outline"
-                      className="w-full bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      <MessageCircle className="mr-2 h-4 w-4" />
-                      WhatsApp
-                    </Button>
-                    <Button
-                      onClick={generateReceipt}
-                      disabled={!shippingMethod || !paymentMethod}
-                      variant="outline"
-                      className="w-full"
-                    >
-                      <Receipt className="mr-2 h-4 w-4" />
-                      Gerar Cupom
-                    </Button>
+
+                    <div className="grid grid-cols-1 gap-2">
+                      <Button
+                        onClick={sendWhatsAppOrder}
+                        disabled={!shippingMethod || !paymentMethod}
+                        variant="outline"
+                        className="w-full bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700"
+                      >
+                        <MessageCircle className="mr-2 h-4 w-4" />
+                        Enviar via WhatsApp
+                      </Button>
+
+                      <Button
+                        onClick={generateReceipt}
+                        disabled={!shippingMethod || !paymentMethod}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        <Receipt className="mr-2 h-4 w-4" />
+                        Gerar Cupom Fiscal
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

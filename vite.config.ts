@@ -3,12 +3,10 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { VitePWA } from "vite-plugin-pwa";
 
-// Configuração simplificada do Vite
+// Configuração otimizada para desenvolvimento
 export default defineConfig({
   server: {
     host: "0.0.0.0",
-    port: 3002, // Alterado para a porta 3002
-    strictPort: true, // Impede que o Vite tente usar outra porta se a 3002 estiver ocupada
     open: true
   },
   plugins: [
@@ -52,6 +50,10 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
+  },
+  preview: {
+    port: parseInt(process.env.PORT || "3000"),
+    host: "0.0.0.0"
   },
   define: {
     'process.env': {}

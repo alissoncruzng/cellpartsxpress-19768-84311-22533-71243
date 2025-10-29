@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,7 @@ import DriverStats from "@/components/driver/DriverStats";
 import WithdrawalRequest from "@/components/driver/WithdrawalRequest";
 import ClientInfo from "@/components/driver/ClientInfo";
 import DeliveryRoute from "@/components/driver/DeliveryRoute";
+import { useUser } from "@/hooks/useUser";
 
 interface Order {
   id: string;
@@ -50,7 +51,6 @@ export default function DriverDashboard() {
   const [availableOrders, setAvailableOrders] = useState<Order[]>([]);
   const [myOrders, setMyOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
   const [balance, setBalance] = useState(0);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -62,12 +62,16 @@ export default function DriverDashboard() {
   const [signature, setSignature] = useState<string>("");
   const [notes, setNotes] = useState("");
   const navigate = useNavigate();
+  const { user } = useUser();
 
   useEffect(() => {
-    checkAuth();
-    loadOrders();
-    loadWallet();
-    
+    if (user) {
+      loadOrders();
+      loadWallet();
+    } else {
+      setLoading(false);
+    }
+
     // Subscribe to realtime updates for new orders
     const ordersChannel = supabase
       .channel('orders-changes')
@@ -93,24 +97,17 @@ export default function DriverDashboard() {
     return () => {
       supabase.removeChannel(ordersChannel);
     };
-  }, []);
+  }, [user]);
 
-  const checkAuth = async () => {
-    // Temporarily disabled for testing - using fake session from App.tsx
-    // const { data: { user } } = await supabase.auth.getUser();
-    // if (!user) {
-    //   navigate("/");
-    //   return;
-    // }
-    // setUserId(user.id);
-    setUserId("test-driver-user"); // Fake user ID for testing
+  const checkAuth = () => {
+    // Verificação feita pelo ProtectedRoute
+    return true;
   };
 
   const loadOrders = async () => {
+    if (!user) return;
+
     try {
-      // Temporarily disabled for testing - using fake session from App.tsx
-      // const { data: { user } } = await supabase.auth.getUser();
-      // if (!user) return;
 
       // Load available orders (pending, not assigned)
       const { data: available, error: availableError } = await supabase
@@ -127,7 +124,7 @@ export default function DriverDashboard() {
       const { data: mine, error: mineError } = await supabase
         .from("orders")
         .select("*")
-        .eq("driver_id", userId)
+        .eq("driver_id", user.id)
         .order("created_at", { ascending: false });
 
       if (mineError) throw mineError;
@@ -146,15 +143,14 @@ export default function DriverDashboard() {
   };
 
   const loadWallet = async () => {
+    if (!user) return;
+
     try {
-      // Temporarily disabled for testing - using fake session from App.tsx
-      // const { data: { user } } = await supabase.auth.getUser();
-      // if (!user) return;
 
       const { data, error } = await supabase
         .from("wallet_transactions")
         .select("*")
-        .eq("driver_id", userId)
+        .eq("driver_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -173,11 +169,13 @@ export default function DriverDashboard() {
   };
 
   const acceptOrder = async (orderId: string) => {
+    if (!user) return;
+
     try {
       const { error } = await supabase
         .from("orders")
         .update({ 
-          driver_id: userId,
+          driver_id: user.id,
           status: "driver_assigned"
         })
         .eq("id", orderId);
@@ -198,7 +196,7 @@ export default function DriverDashboard() {
   };
 
   const rejectOrder = async () => {
-    if (!selectedOrder || !rejectReason.trim()) {
+    if (!selectedOrder || !user || !rejectReason.trim()) {
       toast.error("Por favor, informe o motivo da recusa");
       return;
     }
@@ -209,7 +207,7 @@ export default function DriverDashboard() {
         .from("rejection_logs")
         .insert({
           order_id: selectedOrder.id,
-          driver_id: userId,
+          driver_id: user.id,
           motivo: rejectReason
         });
 
@@ -227,9 +225,11 @@ export default function DriverDashboard() {
   };
 
   const uploadPhoto = async (file: File, type: "pickup" | "delivery") => {
+    if (!user) throw new Error("Usuário não autenticado");
+
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${userId}/${Date.now()}.${fileExt}`;
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
         .from('delivery-proofs')
@@ -246,7 +246,7 @@ export default function DriverDashboard() {
         .from('delivery_proofs')
         .insert({
           order_id: activeDelivery!.id,
-          driver_id: userId,
+          driver_id: user.id,
           tipo: type,
           file_url: publicUrl
         });

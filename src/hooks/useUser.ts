@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/lib/supabase";
 
-export type UserRole = 'admin' | 'client' | 'driver' | 'wholesale';
+export type UserRole = 'admin' | 'client' | 'driver';
 
 export interface UserProfile {
 
