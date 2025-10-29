@@ -16,7 +16,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   }
 }
 
-export const supabase = supabaseUrl && supabaseAnonKey
+const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: true,
@@ -27,3 +27,5 @@ export const supabase = supabaseUrl && supabaseAnonKey
       },
     })
   : null;
+
+export default supabase;
